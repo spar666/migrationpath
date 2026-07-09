@@ -20,19 +20,16 @@ export function useAdminUsers() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const data = await apiClient.get<AdminUserProfile[]>('/admin/users');
-      setUsers(data || []);
+      const response = await apiClient.get<any>('/users?limit=100');
+      // The backend returns a PaginatedResult which has a .data property
+      setUsers(response.data || []);
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast({
-        variant: "destructive",
-        title: "Error loading users",
-        description: "Failed to load user list.",
-      });
+
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     fetchUsers();
