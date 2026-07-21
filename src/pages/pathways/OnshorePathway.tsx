@@ -94,7 +94,7 @@ export default function OnshorePathway() {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
-                  className="btn-gold h-12 px-8 text-base"
+                  className="btn-gold h-auto min-h-12 whitespace-normal px-6 sm:px-8 text-base"
                   onClick={() => setAuditModalOpen(true)}
                 >
                   Quick Strategy Audit
@@ -213,7 +213,7 @@ export default function OnshorePathway() {
                 </p>
                 
                 <Link to="/auth?intent=signup&persona=onshore-skilled">
-                  <Button className="btn-gold w-full h-12 text-base">
+                  <Button className="btn-gold w-full h-auto min-h-12 whitespace-normal text-base">
                     Secure Your Pathway & Open Dashboard
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>

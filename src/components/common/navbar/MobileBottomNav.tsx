@@ -29,7 +29,7 @@ export function MobileBottomNav() {
 							key={item.href}
 							to={item.href}
 							className={cn(
-								"relative flex flex-col items-center justify-center gap-1 px-4 py-2 rounded-xl transition-all duration-200",
+								"relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-2 rounded-xl transition-all duration-200",
 								isActive 
 									? "text-white" 
 									: "text-white/60 hover:text-white/80"

@@ -62,12 +62,13 @@ export function AdminSidebar() {
   return (
     <aside
       className={cn(
+        // Icon-only rail on mobile; full sidebar (collapsible) from lg up
         "flex flex-col bg-navy text-primary-foreground transition-all duration-300 min-h-screen",
-        collapsed ? "w-16" : "w-64"
+        collapsed ? "w-16" : "w-16 lg:w-64"
       )}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-primary-foreground/10">
+      {/* Header — collapse toggle is desktop-only */}
+      <div className="hidden lg:flex items-center justify-between p-4 border-b border-primary-foreground/10">
         {!collapsed && (
           <span className="text-lg font-bold tracking-tight">Admin Suite</span>
         )}
@@ -89,6 +90,7 @@ export function AdminSidebar() {
             <NavLink
               key={item.path}
               to={item.path}
+              title={item.title}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
                 "hover:bg-primary-foreground/10",
@@ -96,9 +98,9 @@ export function AdminSidebar() {
               )}
             >
               <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-navy")} />
-              {!collapsed && <span className="text-sm">{item.title}</span>}
+              {!collapsed && <span className="hidden lg:inline text-sm">{item.title}</span>}
               {!collapsed && freshness[item.path] && (
-                <FreshnessDot status={freshness[item.path]} className="ml-auto" />
+                <FreshnessDot status={freshness[item.path]} className="ml-auto hidden lg:block" />
               )}
             </NavLink>
           );
@@ -109,10 +111,11 @@ export function AdminSidebar() {
       <div className="p-4 border-t border-primary-foreground/10">
         <NavLink
           to="/"
+          title="Back to Site"
           className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-primary-foreground/10 transition-colors"
         >
           <Home className="h-5 w-5 shrink-0" />
-          {!collapsed && <span className="text-sm">Back to Site</span>}
+          {!collapsed && <span className="hidden lg:inline text-sm">Back to Site</span>}
         </NavLink>
       </div>
     </aside>

@@ -240,7 +240,7 @@ export function CourseManager() {
             <p className="text-muted-foreground">Loading courses...</p>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />
           ))}
@@ -252,7 +252,7 @@ export function CourseManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Course Manager</h1>
           <p className="text-muted-foreground">
@@ -266,7 +266,7 @@ export function CourseManager() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
@@ -303,7 +303,7 @@ export function CourseManager() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -314,7 +314,7 @@ export function CourseManager() {
           />
         </div>
         <Select value={filterRegional} onValueChange={setFilterRegional}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by location" />
           </SelectTrigger>
           <SelectContent>
@@ -424,7 +424,7 @@ export function CourseManager() {
             </DialogDescription>
           </DialogHeader>
           {editingCourse && (
-            <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="grid grid-cols-1 gap-4 py-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>University Name</Label>
                 <Input
@@ -516,7 +516,7 @@ export function CourseManager() {
                 </p>
               </div>
 
-              <div className="col-span-2 flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-3 pt-2 sm:col-span-2">
                 <Switch
                   checked={editingCourse.isActive}
                   onCheckedChange={(checked) =>

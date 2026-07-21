@@ -199,7 +199,7 @@ export function RegionalPostcodeManager() {
             placeholder={"Geelong,CATEGORY_2,3211,3230\nBallarat,CATEGORY_3,3350,3356"}
             className="font-mono text-sm"
           />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-sm text-muted-foreground">
               <input
                 type="checkbox"

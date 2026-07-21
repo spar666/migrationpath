@@ -135,7 +135,7 @@ export function LiveInvitationsManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Live Invitations Manager</h1>
           <p className="text-muted-foreground">
@@ -153,7 +153,7 @@ export function LiveInvitationsManager() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
@@ -290,7 +290,7 @@ export function LiveInvitationsManager() {
                   placeholder="e.g., Software Engineer"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Visa Subclass</Label>
                   <Select
@@ -332,7 +332,7 @@ export function LiveInvitationsManager() {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Points</Label>
                   <Input

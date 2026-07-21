@@ -249,7 +249,7 @@ export function OccupationMaster() {
         </TabsList>
 
         <TabsContent value="occupations" className="mt-6 space-y-4">
-          <div className="flex gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -421,7 +421,7 @@ export function OccupationMaster() {
                 <Label>Title</Label>
                 <Input value={editingOccupation.title} onChange={(e) => setEditingOccupation((prev) => prev && { ...prev, title: e.target.value })} placeholder="e.g., Software Engineer" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Skill Level</Label>
                   <Select value={editingOccupation.skillLevel.toString()} onValueChange={(v) => setEditingOccupation((prev) => prev && { ...prev, skillLevel: parseInt(v) })}>

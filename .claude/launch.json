@@ -1,0 +1,18 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "migrationpath-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/ashishdaju/Downloads/migrationpath-frontend",
+      "port": 8080
+    },
+    {
+      "name": "migrationpath-backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "/Users/ashishdaju/Downloads/migrationpath-backend", "run", "start:prod"],
+      "port": 3000
+    }
+  ]
+}

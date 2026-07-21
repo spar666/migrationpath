@@ -143,7 +143,7 @@ export function Header() {
 							<div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 transition-all duration-300 group-hover:bg-white/15 group-hover:border-accent/30 group-hover:shadow-[0_0_15px_-3px_rgba(198,161,91,0.3)]">
 								<Sparkles className="w-4 h-4 text-accent group-hover:scale-110 transition-all duration-300" />
 							</div>
-							<span className="hidden text-lg font-bold text-white sm:inline-block tracking-tight">
+							<span className="inline-block text-lg font-bold text-white tracking-tight">
 								Migration
 								<span className="text-accent">Path</span>
 							</span>

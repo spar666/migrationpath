@@ -170,7 +170,7 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
                 transition={{ delay: 0.3 }}
               >
                 {/* Left — Work & Study Track */}
-                <div className="flex flex-col rounded-2xl border-2 border-navy/10 bg-white p-6 text-left shadow-soft-sm">
+                <div className="flex min-w-0 flex-col rounded-2xl border-2 border-navy/10 bg-white p-6 text-left shadow-soft-sm">
                   <div className="mb-4 flex items-center gap-2.5">
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-navy/5">
                       <GraduationCap className="h-5 w-5 text-navy" />
@@ -197,7 +197,7 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
                 </div>
 
                 {/* Right — Family & Partner Track */}
-                <div className="flex flex-col justify-between rounded-2xl border-2 border-gold/30 bg-gradient-to-br from-navy to-navy-dark p-6 text-left shadow-soft-sm">
+                <div className="flex min-w-0 flex-col justify-between rounded-2xl border-2 border-gold/30 bg-gradient-to-br from-navy to-navy-dark p-6 text-left shadow-soft-sm">
                   <div>
                     <div className="mb-4 flex items-center gap-2.5">
                       <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/15">
@@ -220,7 +220,7 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
                   <Button
                     variant="elite"
                     size="lg"
-                    className="h-14 w-full text-base gap-2"
+                    className="h-auto min-h-14 w-full whitespace-normal text-base gap-2"
                     onClick={() => navigate(FAMILY_ROUTE)}
                   >
                     Check Family &amp; Partner PR Eligibility

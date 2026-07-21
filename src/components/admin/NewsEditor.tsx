@@ -167,7 +167,7 @@ export function NewsEditor() {
         <p className="text-muted-foreground">Manage migration news articles and policy updates</p>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -234,7 +234,7 @@ export function NewsEditor() {
                 <Label>Title</Label>
                 <Input value={editingArticle.title} onChange={(e) => setEditingArticle((prev) => prev && { ...prev, title: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Category</Label>
                   <Select value={editingArticle.category} onValueChange={(v: Category) => setEditingArticle((prev) => prev && { ...prev, category: v })}>

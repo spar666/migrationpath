@@ -68,7 +68,7 @@ export function UserOversight() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">User Oversight</h1>
           <p className="text-muted-foreground">Monitor users and manage their profiles</p>

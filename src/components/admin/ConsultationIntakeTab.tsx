@@ -132,7 +132,7 @@ export function ConsultationIntakeTab({ userId }: ConsultationIntakeTabProps) {
   const renderEnglishScores = (scores: EnglishScores | null | undefined, testType: string | null | undefined) => {
     if (!scores || !testType || testType === "none") return null;
     return (
-      <div className="grid grid-cols-5 gap-2 mt-2">
+      <div className="grid grid-cols-3 gap-2 mt-2 sm:grid-cols-5">
         {["listening", "reading", "writing", "speaking", "overall"].map((skill) => {
           const score = scores[skill as keyof EnglishScores];
           return (
@@ -187,7 +187,7 @@ export function ConsultationIntakeTab({ userId }: ConsultationIntakeTabProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 pt-0">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <p className="text-xs text-muted-foreground">Occupation</p>
               <p className="font-medium">{questionnaire.current_occupation}</p>
@@ -231,7 +231,7 @@ export function ConsultationIntakeTab({ userId }: ConsultationIntakeTabProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 pt-0">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <p className="text-xs text-muted-foreground">Marital Status</p>
               <p className="font-medium">
@@ -258,7 +258,7 @@ export function ConsultationIntakeTab({ userId }: ConsultationIntakeTabProps) {
                     Partner Skills
                   </Badge>
                 </h5>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <p className="text-xs text-muted-foreground">Partner&apos;s Occupation</p>
                     <p className="font-medium">
@@ -273,7 +273,7 @@ export function ConsultationIntakeTab({ userId }: ConsultationIntakeTabProps) {
                         : "Not specified"}
                     </p>
                   </div>
-                  <div className="col-span-2">
+                  <div className="sm:col-span-2">
                     <p className="text-xs text-muted-foreground">Partner&apos;s English Test</p>
                     <p className="font-medium">
                       {questionnaire.partner_skills.english_test_type

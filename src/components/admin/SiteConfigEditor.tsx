@@ -202,12 +202,12 @@ export function SiteConfigEditor() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Site Configuration</h1>
           <p className="text-muted-foreground">Manage content across all public pages</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Switch
               checked={livePreview}
@@ -231,7 +231,7 @@ export function SiteConfigEditor() {
         <div className="space-y-6">
           {/* Page Selector */}
           <Tabs value={activePageTab} onValueChange={(v) => setActivePageTab(v as PageKey)}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid h-auto w-full grid-cols-3 sm:grid-cols-5">
               {(Object.keys(pageIcons) as PageKey[]).map((page) => {
                 const Icon = pageIcons[page];
                 return (
@@ -330,7 +330,7 @@ export function SiteConfigEditor() {
                 </div>
               </AccordionTrigger>
               <AccordionContent className="space-y-4 pt-2">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Primary CTA</Label>
                     <Input
@@ -417,7 +417,7 @@ export function SiteConfigEditor() {
                       rows={3}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <Label>Healthcare Processing</Label>
                       <Input

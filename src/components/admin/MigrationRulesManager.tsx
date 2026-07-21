@@ -288,8 +288,8 @@ export function MigrationRulesManager() {
           return (
             <Card key={persona} className="overflow-hidden">
               <CardHeader className="border-b bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <CardTitle className="flex flex-wrap items-center gap-3">
                     <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", config.color)}>
                       <Icon className="w-5 h-5 text-white" />
                     </div>

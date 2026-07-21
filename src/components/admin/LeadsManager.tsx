@@ -40,6 +40,7 @@ const statusColors: Record<LeadStatus, string> = {
 const sourceLabels: Record<string, string> = {
   quote_slideover: "Header Quick Quote",
   quote_page: "Quote Page",
+  partner_eligibility: "Partner Quiz",
   other: "Other",
 };
 
@@ -103,14 +104,14 @@ export function LeadsManager() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Users className="h-6 w-6" />
             Leads
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Quote requests captured from the header quick-quote form and the /quote page.
+            Quote requests from the quick-quote form and /quote page, plus partner-visa eligibility quiz submissions.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => fetchLeads(page)} className="gap-2">

@@ -102,7 +102,7 @@ export function FinalCTA() {
             <Button
               variant="gold"
               size="xl"
-              className="gap-3 text-lg px-12 shadow-gold-glow hover:shadow-lg transition-all duration-300 hover:scale-105"
+              className="gap-3 max-w-full whitespace-normal h-auto py-4 text-base px-6 sm:text-lg sm:px-12 shadow-gold-glow hover:shadow-lg transition-all duration-300 hover:scale-105"
               onClick={() => navigate("/quote")}
             >
               Get My Free Migration Audit

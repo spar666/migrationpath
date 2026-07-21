@@ -136,7 +136,7 @@ export function OccupationListImport() {
             placeholder={"261313,MLTSSL\n254411,MLTSSL\n221111,STSOL"}
             className="font-mono text-sm"
           />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-sm text-muted-foreground">
               <input
                 type="checkbox"

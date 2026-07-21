@@ -92,7 +92,7 @@ export default function PartnerPathway() {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/auth?intent=signup&persona=partner">
-                  <Button className="btn-gold h-12 px-8 text-base">
+                  <Button className="btn-gold h-auto min-h-12 whitespace-normal px-6 sm:px-8 text-base">
                     Secure Your Pathway & Open Dashboard
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -208,7 +208,7 @@ export default function PartnerPathway() {
                 </p>
                 
                 <Link to="/auth?intent=signup&persona=partner">
-                  <Button className="btn-gold w-full h-12 text-base">
+                  <Button className="btn-gold w-full h-auto min-h-12 whitespace-normal text-base">
                     Secure Your Pathway & Open Dashboard
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>

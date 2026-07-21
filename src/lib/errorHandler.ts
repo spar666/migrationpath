@@ -57,6 +57,17 @@ export const getErrorMessage = (error: unknown): string => {
   if (typeof error === 'string') {
     return error;
   }
+  // API error bodies: { message: string | string[] } (Nest) or { error: { message } }
+  if (error && typeof error === 'object') {
+    const body = error as { message?: unknown; error?: { message?: unknown } };
+    const message = body.message ?? body.error?.message;
+    if (Array.isArray(message) && message.length > 0) {
+      return message.join('. ');
+    }
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+  }
   return 'An unexpected error occurred';
 };
 
