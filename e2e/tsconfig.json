@@ -1,0 +1,27 @@
+{
+  // The E2E suite was previously outside every tsconfig `include`, which meant
+  // `tsc --noEmit` silently skipped it — a spec could reference a page object
+  // method that did not exist and nothing would say so until the browser ran.
+  //
+  // Kept as its own project rather than folded into tsconfig.app.json because
+  // the specs are Node-side code with different globals and libs from the
+  // browser bundle, and because @playwright/test must not become a dependency
+  // of the application build.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts"]
+}

@@ -16,6 +16,9 @@ import NewsArticle from "./pages/NewsArticle";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Consultation from "./pages/Consultation";
+import PreScreen from "./pages/PreScreen";
+import ConsultBook from "./pages/ConsultBook";
+import ConsultConfirmed from "./pages/ConsultConfirmed";
 import PartnerAudit from "./pages/PartnerAudit";
 import ParentAudit from "./pages/ParentAudit";
 import { 
@@ -56,6 +59,14 @@ const App = () => (
             <Route path="/points-calculator" element={<PointsCalculator />} />
             <Route path="/occupation-search" element={<OccupationSearch />} />
             <Route path="/consultation" element={<Consultation />} />
+
+            {/* Lead-gen funnel. /consult/book and /consult/confirmed are the
+                Stripe cancel and success URLs — if these paths change, the
+                backend's STRIPE_CANCEL_URL / STRIPE_SUCCESS_URL must change
+                with them or paying visitors land on a 404. */}
+            <Route path="/pre-screen" element={<PreScreen />} />
+            <Route path="/consult/book" element={<ConsultBook />} />
+            <Route path="/consult/confirmed" element={<ConsultConfirmed />} />
             <Route path="/partner-audit" element={<PartnerAudit />} />
             <Route path="/parent-audit" element={<ParentAudit />} />
             <Route path="/quote" element={<Quote />} />

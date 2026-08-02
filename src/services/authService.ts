@@ -50,12 +50,11 @@ class AuthService {
       const raw = await apiClient.post<any>(`${this.baseURL}/signin`, credentials);
       const res = this.normalizeResponse<AuthResponse>(raw) || {};
 
-      // Support all common token field names
-      const token = res.token || res.accessToken || (res as any).access_token || (res as any).data?.token || (res as any).data?.accessToken;
+      const token = this.extractToken(res);
 
-      console.debug('[AuthService] Login response normalized:', res);
-      console.debug('[AuthService] Extracted token:', token ? 'Found' : 'Not Found');
-
+      // Deliberately not logged. The normalized response carries the user
+      // object and the token itself, and console output reliably ends up in
+      // support screenshots, session recordings and browser extensions.
       if (token) this.setToken(token);
 
       if (res.refreshToken) this.setRefreshToken(res.refreshToken);
@@ -71,7 +70,8 @@ class AuthService {
     try {
       const raw = await apiClient.post<any>(`${this.baseURL}/signup`, data);
       const res = this.normalizeResponse<AuthResponse>(raw) || {};
-      if (res.token) this.setToken(res.token);
+      const token = this.extractToken(res);
+      if (token) this.setToken(token);
       if (res.refreshToken) this.setRefreshToken(res.refreshToken);
       return res as AuthResponse;
     } catch (err) {
@@ -93,7 +93,8 @@ class AuthService {
     try {
       const raw = await apiClient.post<any>(`${this.baseURL}/refresh`, { refreshToken: rt });
       const res = this.normalizeResponse<AuthResponse>(raw) || {};
-      if (res.token) this.setToken(res.token);
+      const token = this.extractToken(res);
+      if (token) this.setToken(token);
       return res as AuthResponse;
     } catch (err) {
       this.logout();
@@ -188,6 +189,29 @@ class AuthService {
 
   private clearRefreshToken(): void {
     localStorage.removeItem(this.refreshTokenKey);
+  }
+
+  /**
+   * Pulls the access token out of an auth response, whatever it's called.
+   *
+   * The backend signs `access_token`; older code and some proxies use `token`
+   * or `accessToken`, and the envelope is sometimes still wrapped in `data`.
+   *
+   * This used to be inlined at each call site, and only the login one was ever
+   * kept up to date — so signup and refresh silently dropped the token the
+   * server had just issued. Nothing threw: the user simply appeared logged out
+   * after registering, or got signed out mid-session when a refresh "worked".
+   * One reader, three callers, so they cannot drift apart again.
+   */
+  private extractToken(res: any): string | undefined {
+    return (
+      res?.token ||
+      res?.accessToken ||
+      res?.access_token ||
+      res?.data?.token ||
+      res?.data?.accessToken ||
+      res?.data?.access_token
+    );
   }
 
   private normalizeResponse<T>(raw: any): T {

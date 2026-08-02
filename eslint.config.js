@@ -23,4 +23,22 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // The Playwright suite is Node-side code with no React in it.
+    //
+    // react-hooks/rules-of-hooks fires a false positive on Playwright's
+    // fixture signature — `async ({ page }, use) => { await use(value) }` — by
+    // reading the `use` callback as a React Hook. It is not one, and the rule
+    // has no way to tell.
+    //
+    // Scoped to e2e/ so the rule keeps doing its job everywhere it applies.
+    files: ["e2e/**/*.ts", "playwright.config.ts"],
+    languageOptions: {
+      globals: globals.node,
+    },
+    rules: {
+      "react-hooks/rules-of-hooks": "off",
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

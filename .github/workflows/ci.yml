@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `npm ci` is what resolves the platform-binary problem: rollup, esbuild
+      # and @swc/core all ship per-OS native packages, and a node_modules built
+      # on macOS cannot run on a Linux runner. Installing from the lockfile on
+      # the runner itself picks the right ones.
+      #
+      # ⚠️ This repo also carries bun.lockb and yarn.lock, neither of which is
+      # tracked in git. Only package-lock.json is. If someone starts installing
+      # with a different tool the two will drift and CI will stop matching
+      # local. Pick one and delete the others.
+      - name: Install
+        run: npm ci
+
+      # Reports, does not block — deliberately, and temporarily.
+      #
+      # There are ~151 pre-existing lint errors across 56 files. Gating on them
+      # would make CI red from its first run, and a permanently-red pipeline
+      # gets ignored — taking the next genuine failure down with it.
+      #
+      # Typecheck and tests below DO block. Burn the existing errors down, then
+      # delete continue-on-error.
+      - name: Lint (report only — see comment)
+        continue-on-error: true
+        run: npm run lint
+
+      # Test files were written clean and are gated so they stay that way.
+      - name: Lint tests (blocking)
+        run: npx eslint "src/**/*.test.{ts,tsx}" "e2e/**/*.ts" playwright.config.ts --max-warnings 0
+
+      # `npm run build` runs tsc too, but as a separate step the failure
+      # message says "types" rather than "build", which is a quicker read.
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Build-time only. The funnel's Calendly link is deliberately left
+          # empty: openScheduler throws a caught error when it is missing, and
+          # the result screen has a tested fallback path for exactly that.
+          VITE_API_BASE_URL: /api/v1
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    # Runs after the fast checks: no point spending browser minutes on a branch
+    # that does not typecheck.
+    needs: verify
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # The funnel specs stub Stripe and Calendly at the network layer, so this
+      # needs no live credentials and no backend. See e2e/README.md.
+      - name: E2E tests
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
