@@ -231,18 +231,39 @@ export function CalendlyEmbed({
   }, []);
 
   return (
-    <div className="relative">
+    // The widget container must be LAID OUT — real width, real height — before
+    // initInlineWidget runs, and must stay that way.
+    //
+    // Calendly picks its layout once, at init, by measuring
+    // `parentElement.offsetWidth`, and below roughly 680px it switches to the
+    // narrow single-column date picker meant for phones. It was previously
+    // initialised while the container still carried `hidden`, so it measured a
+    // `display: none` element, read 0, and locked into that narrow layout —
+    // which is why the date picker came out squashed on a full-width desktop
+    // card. Nothing later un-does that: the choice is not re-made on reveal.
+    //
+    // So the loading state is an OVERLAY rather than a swap. The container is
+    // never removed from layout, and the spinner sits on top of it until the
+    // widget has drawn itself, which also stops the visitor watching it build.
+    //
+    // The height is definite (`h-[700px]`) rather than a minimum. Calendly
+    // sizes its iframe to `height: 100%`, and a percentage height resolves
+    // against nothing on a parent that only has `min-height`.
+    <div className="relative min-h-[700px]">
+      <div
+        ref={container}
+        data-testid="calendly-inline-widget"
+        className="h-[700px] min-w-[320px]"
+      />
       {!ready && (
-        <div className="flex h-[700px] items-center justify-center gap-3 text-navy-muted">
+        <div
+          data-testid="calendly-loading"
+          className="absolute inset-0 z-10 flex items-center justify-center gap-3 bg-white text-navy-muted"
+        >
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Loading available times…</span>
         </div>
       )}
-      <div
-        ref={container}
-        data-testid="calendly-inline-widget"
-        className={ready ? 'min-h-[700px]' : 'hidden'}
-      />
     </div>
   );
 }
