@@ -53,6 +53,21 @@ export interface PreScreenSponsor {
   years_trading?: number;
   state?: string;
   postcode?: string;
+  business_address?: string;
+  sponsored_last_5_years?: boolean;
+  /** Approved Standard Business Sponsorship, as declared. */
+  is_standard_business_sponsor?: boolean;
+  /**
+   * Banded answers are sent as the chosen label AND as a derived floor on the
+   * numeric field above, so the agent sees the range and the engine gets a
+   * figure to test.
+   */
+  annual_revenue_band?: string;
+  years_operating_band?: string;
+  employee_count_band?: string;
+  operates_only_in_australia?: boolean;
+  has_temporary_visa_employees?: boolean;
+  referral_source?: string;
   sponsorship_status?:
     | 'prospective'
     | 'approved'
@@ -66,8 +81,11 @@ export interface PreScreenSponsor {
 export interface PreScreenNomination {
   occupation_code?: string;
   occupation_name?: string;
+  position_title?: string;
   subclass?: string;
   annual_salary?: number;
+  salary_band?: string;
+  candidate_current_pay_band?: string;
   work_state?: string;
   work_postcode?: string;
   is_regional?: boolean;

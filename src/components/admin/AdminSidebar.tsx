@@ -14,8 +14,8 @@ import {
   ListChecks,
   TrendingUp,
   Scale,
-  FileQuestion,
   Inbox,
+  ClipboardCheck,
   MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ import { dataFreshnessService } from "@/services/dataFreshnessService";
 const menuItems = [
   { title: "Overview", icon: LayoutDashboard, path: "/admin" },
   { title: "Leads", icon: Inbox, path: "/admin/leads" },
-  { title: "Consultations", icon: FileQuestion, path: "/admin/consultations" },
+  { title: "Prospects", icon: ClipboardCheck, path: "/admin/prospects" },
   { title: "Site Configuration", icon: Settings, path: "/admin/site-config" },
   { title: "Form Logic", icon: ListChecks, path: "/admin/form-logic" },
   { title: "Migration Rules", icon: Scale, path: "/admin/migration-rules" },

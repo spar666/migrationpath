@@ -1,5 +1,11 @@
 import React from "react";
-import { CheckCircle2, AlertCircle, FileText, ExternalLink } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertCircle,
+  ChevronRight,
+  FileText,
+  ExternalLink,
+} from "lucide-react";
 import { VisaType } from "@/types/migrationRules";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

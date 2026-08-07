@@ -277,13 +277,17 @@ describe('when submission fails', () => {
 });
 
 describe('business branch', () => {
-  it('asks for the business name up front', () => {
+  it('addresses the business contact in the business wording', () => {
     setup('business');
-    expect(screen.getByLabelText(/business name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/what's your first name/i)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/best email to contact you/i),
+    ).toBeInTheDocument();
   });
 
-  it('does not ask an applicant for a business name', () => {
+  it('keeps the neutral wording for an applicant', () => {
     setup('applicant');
-    expect(screen.queryByLabelText(/business name/i)).toBeNull();
+    expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/what's your first name/i)).toBeNull();
   });
 });

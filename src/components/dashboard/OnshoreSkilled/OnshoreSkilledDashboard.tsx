@@ -10,6 +10,7 @@ import { StateInvitationsWidget } from "./StateInvitationsWidget";
 import { PointsBoosterChecklist, StickyAuditCTA } from "@/components/onshore";
 import { DynamicBookingGate } from "@/components/dashboard/DynamicBookingGate";
 import { Link } from "react-router-dom";
+import { useBookConsultation } from "@/hooks/useBookConsultation";
 import { cn } from "@/lib/utils";
 
 interface OnshoreSkilledDashboardProps {
@@ -32,6 +33,7 @@ export function OnshoreSkilledDashboard({
   currentEnglishLevel = "proficient",
 }: OnshoreSkilledDashboardProps) {
   const showPriorityBadge = ["healthcare", "construction", "it"].includes(sector);
+  const bookConsultation = useBookConsultation();
 
   // Determine CTA based on points
   const ctaConfig =
@@ -239,7 +241,13 @@ export function OnshoreSkilledDashboard({
             pointsScore={userPoints}
             anzscoCode={anzscoCode}
             occupationTitle={occupation}
-            onBookConsultation={() => window.open("https://calendly.com/migrationpath", "_blank")}
+            // Into the funnel rather than out to a bare calendly.com link. The
+            // hardcoded URL this replaced carried no prospect id, so any
+            // booking made through it arrived unlinked — impossible to charge
+            // for and impossible to prep. bookConsultation() sends someone with
+            // a prospect to the calendar and everyone else to the assessment
+            // that creates one.
+            onBookConsultation={bookConsultation}
           />
           <StickyAuditCTA userPoints={userPoints} />
         </div>

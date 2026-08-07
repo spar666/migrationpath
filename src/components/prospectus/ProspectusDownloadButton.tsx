@@ -1,11 +1,32 @@
 import React, { useState } from "react";
-import { pdf } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Download, Loader2, CheckCircle } from "lucide-react";
-import { MigrationProspectus } from "./MigrationProspectus";
 import { useQuestionnaireStatus } from "@/hooks/useQuestionnaireStatus";
 import { format, differenceInYears, parseISO } from "date-fns";
+
+/**
+ * Questionnaire answers are free-form (`[key: string]: unknown`) because the
+ * questions are authored in FormLogicEditor, so every field read here has to be
+ * narrowed rather than assumed.
+ *
+ * These return undefined for a missing OR wrong-typed answer, which is what the
+ * `if (...)` guards around each block already expect. Casting to `any` would
+ * compile just as well and would turn a stray string like "five years" into
+ * silent NaN points on a document the prospect is handed.
+ */
+function asText(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function asNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
 
 interface PartnerSkills {
   hasPartnerSkills?: boolean;
@@ -48,8 +69,9 @@ export function ProspectusDownloadButton({
     const breakdown: { category: string; detail: string; points: number }[] = [];
 
     // Age calculation
-    if (questionnaireData.date_of_birth) {
-      const age = differenceInYears(new Date(), parseISO(questionnaireData.date_of_birth));
+    const dateOfBirth = asText(questionnaireData.date_of_birth);
+    if (dateOfBirth) {
+      const age = differenceInYears(new Date(), parseISO(dateOfBirth));
       let agePoints = 0;
       let ageDetail = "";
 
@@ -74,8 +96,9 @@ export function ProspectusDownloadButton({
     }
 
     // English proficiency
-    if (questionnaireData.english_test_type && questionnaireData.english_scores) {
-      const testType = questionnaireData.english_test_type.toUpperCase();
+    const englishTestType = asText(questionnaireData.english_test_type);
+    if (englishTestType && questionnaireData.english_scores) {
+      const testType = englishTestType.toUpperCase();
       let englishPoints = 0;
       let englishDetail = `${testType} - `;
 
@@ -112,8 +135,8 @@ export function ProspectusDownloadButton({
     }
 
     // Work experience
-    if (questionnaireData.years_experience) {
-      const years = questionnaireData.years_experience;
+    const years = asNumber(questionnaireData.years_experience);
+    if (years !== undefined) {
       let expPoints = 0;
 
       if (years >= 8) {
@@ -256,6 +279,14 @@ export function ProspectusDownloadButton({
         strategicSummary: buildStrategicSummary(),
         generatedDate: format(new Date(), "MMMM d, yyyy"),
       };
+
+      // Loaded on click, not at import. The PDF renderer and its fonts are
+      // over a megabyte — statically importing it put that on the initial load
+      // of every page for a button most visitors never press.
+      const [{ pdf }, { MigrationProspectus }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("./MigrationProspectus"),
+      ]);
 
       const blob = await pdf(<MigrationProspectus {...prospectusProps} />).toBlob();
       const url = URL.createObjectURL(blob);

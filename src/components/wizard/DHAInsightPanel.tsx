@@ -62,7 +62,7 @@ export function DHAInsightPanel({ category }: DHAInsightPanelProps) {
       {/* DHA Insight Card */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentStep}
+          key={category}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
@@ -97,7 +97,7 @@ export function DHAInsightPanel({ category }: DHAInsightPanelProps) {
       {/* Pro-Tip Card */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={`pro-tip-${currentStep}`}
+          key={`pro-tip-${category}`}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}

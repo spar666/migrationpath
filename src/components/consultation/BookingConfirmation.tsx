@@ -1,5 +1,9 @@
 import { motion } from "framer-motion";
 import {
+  useBookConsultation,
+  hasBookableProspect,
+} from "@/hooks/useBookConsultation";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -53,10 +57,22 @@ export function BookingConfirmation({
   sessionType,
 }: BookingConfirmationProps) {
   const session = SESSION_INFO[sessionType];
+  const bookConsultation = useBookConsultation();
+  const prospect = hasBookableProspect();
 
-  const handleBookCalendly = () => {
-    // Replace with actual Calendly link
-    window.open("https://calendly.com/migrationpath/strategy-session", "_blank");
+  /**
+   * Into the funnel, not out of the site.
+   *
+   * This used to `window.open` a hardcoded calendly.com link left behind by a
+   * "replace with actual Calendly link" placeholder. Three things were wrong
+   * with it: the URL was not the live one, it carried no prospect id so any
+   * resulting booking arrived unlinked and unpayable, and it landed on
+   * Calendly's own confirmation screen — a dead end with no route to the
+   * consultation fee. That is the screen people were getting stuck on.
+   */
+  const handleBook = () => {
+    onOpenChange(false);
+    bookConsultation();
   };
 
   return (
@@ -119,17 +135,18 @@ export function BookingConfirmation({
 
           {/* CTA */}
           <Button
-            onClick={handleBookCalendly}
+            onClick={handleBook}
             className="w-full gap-2 bg-accent hover:bg-accent/90 text-accent-foreground"
             size="lg"
           >
             <Calendar className="h-4 w-4" />
-            Choose a Time
-            <ExternalLink className="h-4 w-4" />
+            {prospect ? "Choose a Time" : "Check your eligibility first"}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            You&apos;ll be redirected to our secure booking system
+            {prospect
+              ? "Pick a time, then confirm it with the consultation fee."
+              : "We need a completed assessment before we can book you in."}
           </p>
         </motion.div>
       </DialogContent>

@@ -27,6 +27,7 @@ import { useSiteConfig } from "@/contexts/SiteConfigContext";
 type FlowState = "entry" | "fast-audit" | "strategy-preview" | "skilled-result";
 
 const FAMILY_ROUTE = "/partner-audit";
+const EMPLOYER_SPONSORED_ROUTE = "/pre-screen";
 
 interface HeroSectionProps {
   onSearchFocus?: () => void;
@@ -194,6 +195,15 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
                   <p className="mt-3 text-xs text-navy-muted">
                     e.g. “261313”, “Software Engineer”, “Master of Nursing”, “Deakin”
                   </p>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="mt-4 h-auto min-h-12 w-full whitespace-normal text-base gap-2"
+                    onClick={() => navigate(EMPLOYER_SPONSORED_ROUTE)}
+                  >
+                    Check Employer Sponsored Visa Eligibility
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
 
                 {/* Right — Family & Partner Track */}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, unwrapArray } from "@/lib/apiClient";
 
 export interface AdminUserProfile {
   id: string;
@@ -16,16 +16,24 @@ export interface AdminUserProfile {
 export function useAdminUsers() {
   const [users, setUsers] = useState<AdminUserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchUsers = useCallback(async () => {
     try {
-      const response = await apiClient.get<any>('/users?limit=100');
-      // The backend returns a PaginatedResult which has a .data property
-      setUsers(response.data || []);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-
+      const response = await apiClient.get<unknown>('/users?limit=100');
+      setUsers(unwrapArray<AdminUserProfile>(response));
+      setError(null);
+    } catch (err) {
+      // A silent failure here reads as "no users on the platform", which is a
+      // very different thing from "we could not reach the API".
+      console.error('Error fetching users:', err);
+      setUsers([]);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Could not load users from the API.',
+      );
     } finally {
       setLoading(false);
     }
@@ -38,6 +46,7 @@ export function useAdminUsers() {
   return {
     users,
     loading,
+    error,
     refetch: fetchUsers,
   };
 }

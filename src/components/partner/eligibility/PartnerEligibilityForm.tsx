@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -24,12 +25,14 @@ import {
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { ConsultationCTA } from "@/components/common/ConsultationCTA";
+import { saveProspectSession } from "@/lib/prospectSession";
 import {
   partnerEligibilityService,
   type PartnerEligibilityResult,
 } from "@/services/partnerEligibilityService";
 import { getErrorMessage } from "@/lib/errorHandler";
 import {
+  CONSENT_NOTICE,
   FORM_STEPS,
   type Answers,
   type FieldDef,
@@ -51,6 +54,10 @@ function visibleFields(step: StepDef, answers: Answers): FieldDef[] {
 
 function isAnswered(field: FieldDef, answers: Answers): boolean {
   const v = answers[field.id];
+  // Consent stores the notice text when ticked and is cleared when unticked,
+  // so "answered" and "agreed" are the same thing — there is no way to submit
+  // a consent field with a value that means "no".
+  if (field.type === "consent") return v === CONSENT_NOTICE;
   if (Array.isArray(v)) return v.length > 0;
   return typeof v === "string" && v.trim().length > 0;
 }
@@ -67,6 +74,9 @@ function todayISO(): string {
 function validationError(field: FieldDef, answers: Answers): string | null {
   const v = answers[field.id];
   if (!isAnswered(field, answers)) {
+    if (field.type === "consent") {
+      return "Please tick this box so we can save your assessment.";
+    }
     return field.required === false ? null : "This question is required.";
   }
   if (field.type === "email" && typeof v === "string" && !EMAIL_RE.test(v.trim())) {
@@ -278,7 +288,7 @@ export function PartnerEligibilityForm() {
               animate={{ opacity: 1, scale: 1 }}
               className="rounded-2xl border-2 border-navy/10 bg-white p-8 shadow-soft-sm md:p-10"
             >
-              <ResultScreen result={result} />
+              <ResultScreen result={result} answers={answers} />
             </motion.div>
           )}
       </div>
@@ -300,9 +310,52 @@ function FieldControl({
   const label = personalize(field.label, answers);
   const value = answers[field.id];
 
+  // Consent reads as a statement the person agrees to, not a question with an
+  // answer below it, so the notice sits inside the tickbox row rather than
+  // above it as a heading.
+  if (field.type === "consent") {
+    const agreed = value === CONSENT_NOTICE;
+    return (
+      <div data-field-invalid={error ? "true" : undefined}>
+        <label
+          className={`flex cursor-pointer items-start gap-3 rounded-xl border-2 px-4 py-4 text-sm leading-relaxed transition-colors ${
+            agreed
+              ? "border-gold bg-gold/5 text-navy"
+              : "border-navy/10 text-navy hover:border-navy/25"
+          }`}
+        >
+          <Checkbox
+            className="mt-0.5"
+            checked={agreed}
+            onCheckedChange={(checked) =>
+              onChange(field, checked ? CONSENT_NOTICE : undefined)
+            }
+          />
+          <span>{label}</span>
+        </label>
+        {field.hint && (
+          <p className="mt-2 text-sm text-navy-muted">{field.hint}</p>
+        )}
+        {error && (
+          <p role="alert" className="mt-2 text-sm font-medium text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div data-field-invalid={error ? "true" : undefined}>
-      <Label className="text-base font-semibold text-navy">
+      {/* htmlFor/id are load-bearing, not decoration: without the association a
+          screen reader announces these inputs as unlabelled, and the label text
+          is the entire question. Radio and checkbox groups label themselves via
+          their own per-option <label>, so this points at the free-text and date
+          inputs, which have nothing else. */}
+      <Label
+        htmlFor={`field-${field.id}`}
+        className="text-base font-semibold text-navy"
+      >
         {label}
         {field.required === false && (
           <span className="ml-2 text-xs font-normal text-navy-muted">
@@ -396,6 +449,7 @@ function FieldControl({
 
         {(field.type === "text" || field.type === "email" || field.type === "date") && (
           <Input
+            id={`field-${field.id}`}
             type={field.type === "email" ? "email" : field.type === "date" ? "date" : "text"}
             value={(value as string) ?? ""}
             maxLength={field.maxLength}
@@ -409,6 +463,7 @@ function FieldControl({
 
         {field.type === "textarea" && (
           <Textarea
+            id={`field-${field.id}`}
             value={(value as string) ?? ""}
             maxLength={field.maxLength}
             onChange={(e) => onChange(field, e.target.value)}
@@ -426,7 +481,100 @@ function FieldControl({
   );
 }
 
-function ResultScreen({ result }: { result: PartnerEligibilityResult }) {
+/**
+ * The booking CTA for the partner audit.
+ *
+ * It goes to Calendly rather than /consultation deliberately: the audit has
+ * already collected everything the pre-session questionnaire asks, and a second
+ * form between "you're eligible" and "pick a time" is the costliest drop-off in
+ * the funnel.
+ *
+ * Order is book-then-pay, same as the employer-sponsored funnel. Picking a slot
+ * creates a PENDING (unpaid) booking via Calendly's invitee webhook; the
+ * prospect then lands on /consult/book and pays to confirm it. Someone who
+ * picks a time and abandons checkout leaves a pending row behind — that is the
+ * agent's follow-up queue, not a bug.
+ *
+ * It routes to /consult/schedule rather than opening calendly.com. The calendar
+ * is the middle of the journey, not the end, and off-site it ends on Calendly's
+ * own confirmation screen with the slot held and the fee unpaid. /consult/schedule
+ * hosts the same calendar on our origin and moves them to payment itself.
+ *
+ * The prospect id is what makes any of that work: it rides on the Calendly URL
+ * and is the only thing linking the invitee back to our record, so the CTA is
+ * withheld entirely when there isn't one.
+ */
+function BookingCTA({
+  result,
+  answers,
+  label,
+}: {
+  result: PartnerEligibilityResult;
+  answers: Answers;
+  label?: string;
+}) {
+  const navigate = useNavigate();
+
+  if (!result.can_book || !result.prospect_id || !result.human_ref) return null;
+
+  const email = typeof answers.email === "string" ? answers.email : undefined;
+  const prospectId = result.prospect_id;
+  const humanRef = result.human_ref;
+
+  const book = () => {
+    // Survives the round trip off our origin to Stripe, and the case where the
+    // visitor returns to /consult/book from an email link with no query string.
+    saveProspectSession({
+      prospectId,
+      humanRef,
+      name: result.applicantFirstName,
+      email,
+      party: "applicant",
+    });
+    // The identity also goes on the URL: storage is unavailable in private
+    // browsing, and a forwarded link opened elsewhere has nothing else.
+    navigate(`/consult/schedule?prospect_id=${prospectId}&ref=${humanRef}`);
+  };
+
+  return (
+    <div className="mx-auto mt-8 max-w-sm">
+      <ConsultationCTA label={label} onClick={book} />
+      <p className="mt-3 text-sm text-navy-muted">
+        Pick a time first — you confirm it with the consultation fee on the next
+        step.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Shown to everyone, whatever the outcome. Someone found ineligible today who
+ * improves their position in six months should be able to quote this and pick
+ * up where they left off rather than start over.
+ */
+function ReferenceBlock({ humanRef }: { humanRef: string }) {
+  return (
+    <div className="mx-auto mt-8 max-w-sm rounded-xl border border-navy/10 bg-cloud px-4 py-4 text-left">
+      <p className="text-xs font-semibold uppercase tracking-widest text-navy-muted">
+        Your reference
+      </p>
+      <p className="mt-1 font-mono text-xl font-bold tracking-wider text-navy">
+        {humanRef}
+      </p>
+      <p className="mt-2 text-sm text-navy-muted">
+        Quote this in any email or call about your enquiry.
+      </p>
+    </div>
+  );
+}
+
+function ResultScreen({
+  result,
+  answers,
+}: {
+  result: PartnerEligibilityResult;
+  answers: Answers;
+}) {
   const names = `${result.applicantFirstName} & ${result.sponsorFirstName}`;
 
   if (result.outcome === "eligible") {
@@ -444,8 +592,8 @@ function ResultScreen({ result }: { result: PartnerEligibilityResult }) {
         </p>
         <div className="mx-auto mt-6 max-w-md space-y-4 text-left text-navy-muted leading-relaxed">
           <p>
-            The next step is to book a free 30-minute consultation with one of
-            our migration specialists.
+            The next step is to book a consultation with one of our migration
+            specialists.
           </p>
           <p>
             This meeting is an opportunity to learn more about your situation
@@ -454,9 +602,8 @@ function ResultScreen({ result }: { result: PartnerEligibilityResult }) {
             professional.
           </p>
         </div>
-        <div className="mx-auto mt-8 max-w-sm">
-          <ConsultationCTA />
-        </div>
+        <BookingCTA result={result} answers={answers} />
+        {result.human_ref && <ReferenceBlock humanRef={result.human_ref} />}
       </div>
     );
   }
@@ -481,9 +628,8 @@ function ResultScreen({ result }: { result: PartnerEligibilityResult }) {
             migration agent can review your circumstances one-on-one.
           </p>
         </div>
-        <div className="mx-auto mt-8 max-w-sm">
-          <ConsultationCTA label="Talk to our team" />
-        </div>
+        <BookingCTA result={result} answers={answers} label="Talk to our team" />
+        {result.human_ref && <ReferenceBlock humanRef={result.human_ref} />}
       </div>
     );
   }
@@ -507,9 +653,15 @@ function ResultScreen({ result }: { result: PartnerEligibilityResult }) {
           to you — our team can help you find an alternative pathway.
         </p>
       </div>
-      <div className="mx-auto mt-8 max-w-sm">
-        <ConsultationCTA label="Explore other pathways" />
+      {/* No booking button here on purpose. Selling a paid consultation to
+          someone we have just told we cannot help is how a migration practice
+          earns complaints. Their details are still saved, so an agent can pick
+          this up if their circumstances change. */}
+      <div className="mx-auto mt-8 max-w-md rounded-xl border border-navy/10 bg-cloud px-4 py-4 text-left text-sm leading-relaxed text-navy-muted">
+        We have kept your assessment. If your circumstances change, reply to our
+        email with your reference and we will re-run it at no charge.
       </div>
+      {result.human_ref && <ReferenceBlock humanRef={result.human_ref} />}
     </div>
   );
 }

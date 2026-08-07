@@ -17,6 +17,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Consultation from "./pages/Consultation";
 import PreScreen from "./pages/PreScreen";
+import ConsultSchedule from "./pages/ConsultSchedule";
 import ConsultBook from "./pages/ConsultBook";
 import ConsultConfirmed from "./pages/ConsultConfirmed";
 import PartnerAudit from "./pages/PartnerAudit";
@@ -65,6 +66,11 @@ const App = () => (
                 backend's STRIPE_CANCEL_URL / STRIPE_SUCCESS_URL must change
                 with them or paying visitors land on a 404. */}
             <Route path="/pre-screen" element={<PreScreen />} />
+            {/* /consult/schedule hosts the calendar on our origin so the
+                hand-off to payment is code rather than a Calendly dashboard
+                setting. Sending people to calendly.com instead ends the journey
+                with a held slot and no payment. */}
+            <Route path="/consult/schedule" element={<ConsultSchedule />} />
             <Route path="/consult/book" element={<ConsultBook />} />
             <Route path="/consult/confirmed" element={<ConsultConfirmed />} />
             <Route path="/partner-audit" element={<PartnerAudit />} />

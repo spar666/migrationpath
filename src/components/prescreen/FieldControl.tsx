@@ -8,7 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { Answers, FieldDef } from './formDefinition';
+import { OccupationSearchField } from './OccupationSearchField';
+import {
+  OCCUPATION_CODE_FIELD,
+  OCCUPATION_LIST_FIELD,
+  type Answers,
+  type FieldDef,
+} from './formDefinition';
 
 /**
  * Renders one pre-screen question.
@@ -21,11 +27,14 @@ export function FieldControl({
   field,
   answers,
   onChange,
+  onPatch,
   error,
 }: {
   field: FieldDef;
   answers: Answers;
   onChange: (field: FieldDef, value: Answers[string]) => void;
+  /** Sets several answers at once — the occupation picker resolves three. */
+  onPatch: (patch: Answers) => void;
   error: string | null;
 }) {
   const value = answers[field.id];
@@ -69,6 +78,29 @@ export function FieldControl({
               </label>
             ))}
           </RadioGroup>
+        )}
+
+        {field.type === 'occupation' && (
+          <OccupationSearchField
+            id={field.id}
+            value={stringValue}
+            describedBy={describedBy}
+            invalid={!!error}
+            onSelect={(choice) =>
+              onPatch({
+                [field.id]: choice.occupation_name,
+                [OCCUPATION_CODE_FIELD]: choice.anzsco_code,
+                [OCCUPATION_LIST_FIELD]: choice.primary_list ?? undefined,
+              })
+            }
+            onClear={() =>
+              onPatch({
+                [field.id]: undefined,
+                [OCCUPATION_CODE_FIELD]: undefined,
+                [OCCUPATION_LIST_FIELD]: undefined,
+              })
+            }
+          />
         )}
 
         {field.type === 'select' && (

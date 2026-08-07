@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/apiClient';
+import { apiClient, unwrapArray } from '@/lib/apiClient';
 
 export interface OccupationSuggestion {
   type: 'occupation';
@@ -21,19 +21,6 @@ export interface GroupedSuggestions {
 }
 
 const EMPTY: GroupedSuggestions = { occupations: [], courses: [] };
-
-/**
- * Extract an array payload from the various response envelopes the API may
- * return: raw array, { data: [...] }, or { data: { data: [...] } }.
- */
-function unwrapArray(payload: unknown): any[] {
-  if (Array.isArray(payload)) return payload;
-  const p = payload as any;
-  if (Array.isArray(p?.data)) return p.data;
-  if (Array.isArray(p?.data?.data)) return p.data.data;
-  if (Array.isArray(p?.results)) return p.results;
-  return [];
-}
 
 /**
  * Grouped suggestions for the smart search box. Fetches occupations and courses

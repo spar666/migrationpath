@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -9,7 +9,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { openScheduler } from '@/lib/booking';
+import { saveProspectSession } from '@/lib/prospectSession';
 import type { PreScreenResult as Result } from '@/services/preScreenService';
 
 /**
@@ -109,28 +109,32 @@ export function PreScreenResult({
   name?: string;
   email?: string;
 }) {
-  const [schedulerError, setSchedulerError] = useState<string | null>(null);
+  const navigate = useNavigate();
   const outcome = outcomeOf(result);
   const presentation = PRESENTATION[outcome];
   const Icon = presentation.icon;
 
+  /**
+   * To the calendar we host, not to calendly.com.
+   *
+   * Sending someone off-site ended the journey on Calendly's own confirmation
+   * page (`/invitees/<uuid>`) holding an unpaid slot, with nothing pointing
+   * back at the consultation fee. That page is a dead end we do not control:
+   * the only way to move someone off it is a redirect configured inside the
+   * Calendly dashboard, which nobody can see is missing and no test can assert
+   * on. /consult/schedule runs the same calendar on our origin and moves them
+   * to payment itself.
+   */
   const book = () => {
-    try {
-      openScheduler({
-        prospectId: result.prospect_id,
-        humanRef: result.human_ref,
-        name,
-        email,
-      });
-    } catch (error) {
-      // openScheduler throws when VITE_CALENDLY_CONSULT_URL is missing. A dead
-      // Book button is the most expensive failure in this funnel, so say
-      // something actionable rather than failing silently.
-      console.error('Could not open the scheduler:', error);
-      setSchedulerError(
-        'We could not open the booking calendar. Please contact us and quote your reference — we will book you in manually.',
-      );
-    }
+    saveProspectSession({
+      prospectId: result.prospect_id,
+      humanRef: result.human_ref,
+      name,
+      email,
+    });
+    navigate(
+      `/consult/schedule?prospect_id=${result.prospect_id}&ref=${result.human_ref}`,
+    );
   };
 
   return (
@@ -204,11 +208,6 @@ export function PreScreenResult({
             Pick a time first — you confirm it with the consultation fee on the
             next step.
           </p>
-          {schedulerError && (
-            <p className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-              {schedulerError}
-            </p>
-          )}
         </>
       )}
 

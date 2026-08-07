@@ -63,19 +63,56 @@ export default defineConfig(({ mode }) => {
       minify: !isDev ? "esbuild" : false,
       rollupOptions: {
         output: {
+          /**
+           * Order matters, and substring matching is the trap here: the old
+           * rule tested `id.includes('react')` before the PDF rule, so
+           * `@react-pdf/renderer` — which contains "react" — was pulled into
+           * `vendor` along with everything it depends on. That is what made the
+           * vendor chunk 2 MB, on every page, for a library only the prospectus
+           * download uses.
+           *
+           * Heaviest and most specific packages are matched first, and matching
+           * is anchored to the package path so a name cannot match by accident.
+           */
           manualChunks: (id) => {
-            if (id.includes('node_modules')) {
-              if (id.includes('@radix-ui')) {
-                return 'ui';
-              }
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom') || id.includes('lucide-react') || id.includes('framer-motion')) {
-                return 'vendor';
-              }
-              if (id.includes('@react-pdf/renderer') || id.includes('pako')) {
-                return 'pdf-libs';
-              }
-              return 'vendor';
+            if (!id.includes('node_modules')) return;
+
+            const inPackage = (name: string) =>
+              id.includes(`node_modules/${name}`) ||
+              id.includes(`node_modules/.pnpm/${name}`);
+
+            // @react-pdf and its heavy transitive deps are returned as
+            // undefined ON PURPOSE, which hands them to Rollup's automatic
+            // splitting. They are reachable only through the dynamic
+            // `import("@react-pdf/renderer")` at the two download call sites,
+            // so Rollup puts them in an async chunk that loads on click.
+            //
+            // Neither alternative works: naming them makes Rollup emit a bare
+            // side-effect import of that chunk from the entry, and letting the
+            // `vendor` catch-all below take them pulls a megabyte into the
+            // initial load. Both undo the lazy import.
+            if (
+              inPackage('@react-pdf') ||
+              inPackage('fontkit') ||
+              inPackage('browserify-zlib') ||
+              inPackage('unicode-trie') ||
+              inPackage('unicode-properties') ||
+              inPackage('restructure')
+            ) {
+              return undefined;
             }
+            if (inPackage('@radix-ui')) return 'ui';
+            if (inPackage('recharts') || inPackage('d3-')) return 'charts';
+            if (inPackage('framer-motion')) return 'motion';
+            if (
+              inPackage('react/') ||
+              inPackage('react-dom') ||
+              inPackage('react-router') ||
+              inPackage('scheduler')
+            ) {
+              return 'react';
+            }
+            return 'vendor';
           },
         },
       },

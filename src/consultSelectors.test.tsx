@@ -17,10 +17,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 const get = vi.fn();
+const pollUntilBooked = vi.fn();
 const pollUntilConfirmed = vi.fn();
 vi.mock('@/services/prospectStatusService', () => ({
   prospectStatusService: {
     get: (...a: unknown[]) => get(...a),
+    // The page polls for the Calendly webhook to land rather than reading
+    // once, so the mock has to answer the poll, not the single read.
+    pollUntilBooked: (...a: unknown[]) => pollUntilBooked(...a),
     pollUntilConfirmed: (...a: unknown[]) => pollUntilConfirmed(...a),
   },
 }));
@@ -65,6 +69,17 @@ function renderAt(Component: () => JSX.Element, search: string) {
 
 beforeEach(() => {
   get.mockReset();
+  // Mirrors the real poll's contract: return the status once a booking
+  // appears, and swallow read failures by resolving null. Specs drive it
+  // through `get`, so a rejection here means "we never found out" rather
+  // than "there is definitively no booking" — a distinction the page acts on.
+  pollUntilBooked.mockImplementation(async (...a: unknown[]) => {
+    try {
+      return await get(...a);
+    } catch {
+      return null;
+    }
+  });
   pollUntilConfirmed.mockReset();
   localStorage.clear();
 });

@@ -72,7 +72,7 @@ export function DynamicChoiceStep({
             {/* Option Content */}
             <div className="pr-16 space-y-2">
               <h3 className="font-semibold text-foreground text-lg">
-                {option.attribute_name}
+                {option.label}
               </h3>
             </div>
 

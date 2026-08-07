@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CalendarCheck, Clock, Loader2, Mail, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { resolveProspect } from '@/lib/prospectSession';
+import { clearProspectSession, resolveProspect } from '@/lib/prospectSession';
 import {
+  isUnknownProspect,
   prospectStatusService,
   type ProspectStatus,
 } from '@/services/prospectStatusService';
@@ -84,6 +85,18 @@ export default function ConsultConfirmed() {
       })
       .catch((error) => {
         if (controller.signal.aborted) return;
+
+        // A 404 is a different thing entirely. The endpoint is double-keyed, so
+        // it means this id and reference are not a pair the server knows — the
+        // usual cause being a localStorage session that outlived the record it
+        // pointed at. Showing "taking a little longer than usual" there is
+        // false comfort: nothing is in flight, and it never will be.
+        if (isUnknownProspect(error)) {
+          clearProspectSession();
+          setView('unknown');
+          return;
+        }
+
         console.error('Could not confirm booking state:', error);
         // Still 'pending', not an error state — see the note above.
         setView('pending');

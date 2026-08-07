@@ -76,6 +76,31 @@ export const OTHER_OCCUPATION = {
   is_available: true,
 };
 
+/**
+ * A single occupation, as `GET /occupations/:code` returns it.
+ *
+ * Distinct from the list rows above because `StrategyPreviewCard` reads fields
+ * the list never carries: `thresholds` (which become the state-nomination
+ * line), `sector`, and the two independent priority flags. Serving it the list
+ * payload does not fail — it renders "Check state nomination lists for your
+ * occupation" and a sector of "General", which looks like a legitimate result
+ * for an occupation with no state demand.
+ */
+export const OCCUPATION_DETAIL = {
+  ...OCCUPATION,
+  sector: 'Information Technology',
+  is_high_priority: false,
+  thresholds: [
+    { state_code: 'NSW', is_available: true },
+    { state_code: 'VIC', is_available: true },
+    { state_code: 'QLD', is_available: true },
+    { state_code: 'SA', is_available: true },
+    // Filtered out by `is_available !== false` — present so the filter is
+    // doing something a spec can observe.
+    { state_code: 'TAS', is_available: false },
+  ],
+};
+
 export const COURSE = {
   id: 'course-1',
   courseTitle: 'Master of Information Technology',
@@ -83,6 +108,85 @@ export const COURSE = {
   isRegional: true,
   anzscoCode: '261313',
   anzscoTitle: 'Software Engineer',
+};
+
+/**
+ * The `/search` row, shaped for BOTH of its consumers.
+ *
+ * That endpoint is read by two components that expect different fields:
+ * `useRealSearch` (occupation search page) renders `title`/`description`,
+ * while `useSmartSuggestions` (home hero) maps `courseName`/`university`.
+ * Carrying both keys is deliberate — splitting the stub by caller would mean
+ * guessing which one a given spec is exercising, and a missing key here is
+ * invisible: the section just renders empty.
+ */
+export const SEARCH_ROW = {
+  id: 'course-1',
+  title: 'Software Engineer — 189 pathway',
+  description: 'Skilled Independent',
+  courseName: 'Master of Nursing',
+  university: 'Deakin University',
+};
+
+// --- Intent classification -------------------------------------------------
+//
+// `/search/intent` is the home page's router: whatever it returns decides
+// whether the visitor stays on the hero, or is sent to a course page, a
+// partner audit, or the onshore audit. Each shape below matches one branch of
+// `IntentResult` in searchService — and they are NOT interchangeable. A
+// SKILLED payload missing `occupation` renders the split-screen against
+// `undefined` and takes the whole page down, which is exactly the class of
+// failure the hero specs exist to catch.
+
+export const SKILLED_INTENT = {
+  intent: 'SKILLED' as const,
+  query: '261313',
+  occupation: {
+    anzscoCode: '261313',
+    title: 'Software Engineer',
+    primaryList: 'MLTSSL',
+    assessingAuthority: 'ACS',
+  },
+  pointsTested: [
+    {
+      id: 'visa-189',
+      subclassNumber: '189',
+      streamTitle: 'Skilled Independent',
+      residencyType: 'permanent' as const,
+      name: 'Points-tested stream',
+      caveats: null,
+    },
+  ],
+  employerSponsored: [] as unknown[],
+};
+
+export const STUDENT_INTENT = {
+  intent: 'STUDENT' as const,
+  query: 'Master of Nursing',
+  courses: [
+    {
+      id: 'course-1',
+      courseName: 'Master of Nursing',
+      university: 'Deakin University',
+      isRegional: true,
+      anzscoCode: '254499',
+      occupation: 'Registered Nurse',
+    },
+  ],
+};
+
+export const FAMILY_INTENT = {
+  intent: 'FAMILY' as const,
+  query: 'partner visa',
+  matchedKeyword: 'partner',
+  redirectTo: '/partner-audit',
+};
+
+export const UNKNOWN_INTENT = {
+  intent: 'UNKNOWN' as const,
+  query: 'help me',
+  suggestAudit: true as const,
+  redirectTo: '/pre-screen',
 };
 
 /**
@@ -200,6 +304,46 @@ export function pointsResult(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/**
+ * Matches `ParentAuditResult` in parentService.
+ *
+ * Every field here is load-bearing and the reason is not obvious: the parent
+ * dashboard reads `result.predictedVisa.track` and `result.balanceOfFamily.*`
+ * on its FIRST render, with no optional chaining. A payload missing either —
+ * the generic `{ eligible, reasons, blockers }` shape the other audit
+ * endpoints return, for instance — does not render an empty state. It throws
+ * during render, the ErrorBoundary swallows the page, and any spec asserting
+ * "the book button is absent" passes against a blank screen.
+ */
+export function parentAudit(overrides: Record<string, unknown> = {}) {
+  return {
+    auditId: 'parent-audit-1',
+    isEligible: true,
+    status: 'LEGALLY_ELIGIBLE',
+    balanceOfFamily: {
+      childrenInAustralia: 2,
+      totalChildren: 3,
+      percentage: 66.67,
+      pass: true,
+      alternativeLimbPass: true,
+    },
+    sponsorCheck: { pass: true },
+    aos: {
+      sponsorTaxableIncome: 95_000,
+      benchmark: 83_454.8,
+      meetsBenchmark: true,
+      requiresCoAssurer: false,
+    },
+    predictedVisa: {
+      subclass: '864',
+      name: 'Contributory Aged Parent',
+      track: 'contributory_parent',
+    },
+    recommendations: ['Gather evidence of your children’s residency status.'],
+    ...overrides,
+  };
+}
+
 /** Matches `PartnerEligibilityResult` in partnerEligibilityService. */
 export function partnerResult(overrides: Record<string, unknown> = {}) {
   return {
@@ -212,6 +356,12 @@ export function partnerResult(overrides: Record<string, unknown> = {}) {
     highRisk: false,
     becomingEligible: false,
     ineligible: false,
+    // The quiz now writes onto the funnel spine. Without these the result
+    // screen has no prospect to attach a booking to and hides the CTA, so
+    // omitting them here would silently turn the booking specs into no-ops.
+    prospect_id: PROSPECT_ID,
+    human_ref: HUMAN_REF,
+    can_book: true,
     ...overrides,
   };
 }
@@ -268,7 +418,21 @@ export interface Recorder {
   partnerPayload: () => Record<string, unknown> | null;
   parentPayload: () => Record<string, unknown> | null;
   questionnairePayload: () => Record<string, unknown> | null;
+  /** POST /leads — the quote page's intent capture, including the honeypot. */
+  leadPayload: () => Record<string, unknown> | null;
+  /** Ids passed to DELETE /users/me/progress/:id, in order. */
+  deletedProgressIds: () => string[];
+  /**
+   * The `q` sent to GET /search/intent.
+   *
+   * Worth recording rather than inferring: picking an occupation suggestion
+   * sends its ANZSCO CODE while displaying its title, and the two being
+   * different is the whole point — a code classifies exactly, a title does not.
+   */
+  intentQuery: () => string | null;
   statusCallCount: () => number;
+  /** What the browser reported about the slot it just booked, if anything. */
+  reportedBooking: () => Record<string, unknown> | null;
   /** Number of POST /points/calculate/total calls — the debounce assertion. */
   pointsCallCount: () => number;
   logoutCalled: () => boolean;
@@ -325,10 +489,23 @@ export interface StubOptions {
   points?: Record<string, unknown>;
   /** Overrides for POST /partner/eligibility. */
   partner?: Record<string, unknown>;
+  /** Overrides for POST /parent/audit. */
+  parent?: Record<string, unknown>;
+  /** Overrides for GET /occupations/:code — the strategy preview's source. */
+  occupationDetail?: Record<string, unknown>;
   /** Saved-pathway records for the dashboard. Defaults to one. */
   progress?: unknown[];
   /** Delay every stubbed response by this many ms — for loading-state specs. */
   latencyMs?: number;
+  /**
+   * Which branch GET /search/intent classifies into. Defaults to 'skilled'.
+   *
+   * This one option decides where the home page sends a visitor, so it is the
+   * axis the hero specs vary — the four values are four different funnels.
+   */
+  intent?: 'skilled' | 'student' | 'family' | 'unknown';
+  /** Field-level overrides on top of the chosen intent payload. */
+  intentOverrides?: Record<string, unknown>;
 }
 
 /**
@@ -347,8 +524,12 @@ export async function stubApi(
   let partnerPayload: Record<string, unknown> | null = null;
   let parentPayload: Record<string, unknown> | null = null;
   let questionnairePayload: Record<string, unknown> | null = null;
+  let leadPayload: Record<string, unknown> | null = null;
+  let intentQuery: string | null = null;
+  const deletedProgressIds: string[] = [];
   let calendlyUrl: string | null = null;
   let statusCalls = 0;
+  let reportedBooking: Record<string, unknown> | null = null;
   let pointsCalls = 0;
   let logoutCalled = false;
   const requests: string[] = [];
@@ -492,6 +673,17 @@ export async function stubApi(
     ),
   );
 
+  // A single occupation by ANZSCO code. Registered between the list glob and
+  // the search glob deliberately: `**/occupations/*` also matches
+  // `/occupations/search`, so search has to be registered AFTER this to win,
+  // and this has to be registered after the plain list glob to win over it.
+  await page.route(
+    '**/api/v1/occupations/*',
+    handler('/occupations/:code', (route) =>
+      json(route, envelope({ ...OCCUPATION_DETAIL, ...options.occupationDetail })),
+    ),
+  );
+
   await page.route(
     '**/api/v1/occupations/search**',
     handler('/occupations/search', (route) =>
@@ -504,24 +696,26 @@ export async function stubApi(
   // section simply never appears, which is indistinguishable from working.
   await page.route(
     '**/api/v1/search**',
-    handler('/search', (route) =>
-      json(
-        route,
-        collection([
-          { title: 'Software Engineer — 189 pathway', description: 'Skilled Independent' },
-        ]),
-      ),
-    ),
+    handler('/search', (route) => json(route, collection([SEARCH_ROW]))),
   );
 
+  // The home page's router. `intent` picks which branch the hero takes.
   await page.route(
     '**/api/v1/search/intent**',
-    handler('/search/intent', (route) =>
-      json(route, {
-        success: true,
-        data: { intent: 'SKILLED', query: 'engineer', results: collection([OCCUPATION]) },
-      }),
-    ),
+    handler('/search/intent', (route, path) => {
+      intentQuery = new URL(route.request().url()).searchParams.get('q');
+      void path;
+
+      const byName = {
+        skilled: SKILLED_INTENT,
+        student: STUDENT_INTENT,
+        family: FAMILY_INTENT,
+        unknown: UNKNOWN_INTENT,
+      };
+      const base = byName[options.intent ?? 'skilled'];
+
+      return json(route, envelope({ ...base, ...options.intentOverrides }));
+    }),
   );
 
   // --- Points ---
@@ -618,16 +812,37 @@ export async function stubApi(
   );
 
   // --- Authenticated user data ---
+  //
+  // One glob, both methods. `page.route` does not discriminate on verb, so the
+  // DELETE the dashboard fires when a saved pathway is dismissed lands here
+  // too — and answering it with the full list would be a lie the UI cannot
+  // detect, since it removes the row optimistically either way.
   await page.route(
     '**/api/v1/users/me/progress**',
-    handler('/users/me/progress', (route) =>
-      json(
+    handler('/users/me/progress', (route, path) => {
+      if (route.request().method() === 'DELETE') {
+        deletedProgressIds.push(path.split('/').pop() ?? '');
+        return json(route, envelope({ message: 'Deleted' }));
+      }
+      return json(
         route,
-        envelope(
-          options.progress ?? (options.empty ? [] : [PROGRESS_RECORD]),
-        ),
-      ),
-    ),
+        envelope(options.progress ?? (options.empty ? [] : [PROGRESS_RECORD])),
+      );
+    }),
+  );
+
+  // --- Leads ---
+  //
+  // Intent capture from the quote page's application dialog. Recorded rather
+  // than merely swallowed because the honeypot lives in this payload: a real
+  // visitor must never send `website`, and the only way to notice that the
+  // field stopped being hidden is to look at what got sent.
+  await page.route(
+    '**/api/v1/leads**',
+    handler('/leads', (route) => {
+      leadPayload = route.request().postDataJSON();
+      return json(route, envelope({ id: 'lead-1' }));
+    }),
   );
 
   // --- Audits ---
@@ -651,6 +866,17 @@ export async function stubApi(
     handler('/parent', (route) => {
       parentPayload = route.request().postDataJSON();
       return json(route, envelope({ eligible: true, reasons: [], blockers: [] }));
+    }),
+  );
+
+  // Registered after the glob above so it wins — Playwright matches the most
+  // recently registered route first. The generic `/parent/**` shape above is
+  // not a ParentAuditResult and takes the dashboard down on render.
+  await page.route(
+    '**/api/v1/parent/audit',
+    handler('/parent/audit', (route) => {
+      parentPayload = route.request().postDataJSON();
+      return json(route, envelope(parentAudit(options.parent)));
     }),
   );
 
@@ -704,6 +930,32 @@ export async function stubApi(
     }),
   );
 
+  // The browser reporting the slot it just watched Calendly confirm. This is
+  // what makes checkout work when the invitee webhook is late, misconfigured,
+  // or — on localhost — undeliverable, so the stub answers with a booking the
+  // way the real endpoint does.
+  await page.route(
+    '**/api/v1/prospects/*/booking**',
+    handler('/prospects/booking', (route) => {
+      reportedBooking = route.request().postDataJSON();
+      return json(
+        route,
+        prospectStatus({
+          booking: {
+            id: 'booking-1',
+            status: 'pending',
+            scheduled_at: '2026-08-01T02:00:00.000Z',
+            scheduled_end_at: '2026-08-01T02:45:00.000Z',
+            join_url: null,
+            reschedule_url: null,
+            cancel_url: null,
+          },
+          ...options.status,
+        }),
+      );
+    }),
+  );
+
   await page.route(
     '**/api/v1/prospects',
     handler('/prospects', (route) =>
@@ -735,14 +987,64 @@ export async function stubApi(
   // makes the suite fail the next time they ship a redesign, which trains
   // everyone to ignore red. What matters is that we hand off with the right
   // parameters, and that is observable here.
+  //
+  // The calendar is now embedded on our own page rather than linked to, so
+  // this stub has to stand in for three things: the widget script, the booking
+  // iframe, and the message the real widget posts when a slot is taken.
+  //
+  // The iframe is served from a calendly.com URL on purpose. /consult/schedule
+  // checks `event.origin` before it trusts a "booking made" message — any page
+  // can postMessage into a window, and acting on a forged one would march the
+  // visitor to checkout for a slot that does not exist. Posting from our own
+  // origin would be rejected, and the stub would prove nothing.
+  // Registration order matters and is the reverse of what reads naturally:
+  // Playwright tries the MOST RECENTLY registered route first, so the broad
+  // calendly.com handler goes in before the narrow widget.js one. Registered
+  // the other way round, the broad handler swallows the script request, the
+  // widget never defines window.Calendly, and the embed silently falls back to
+  // its "calendar unavailable" branch.
   await page.route(/calendly\.com/, async (route) => {
     calendlyUrl = route.request().url();
     return route.fulfill({
       status: 200,
       contentType: 'text/html',
-      body: '<html><body><h1>Calendly (stubbed)</h1></body></html>',
+      body: `<html><body>
+        <h1>Calendly (stubbed)</h1>
+        <button id="pick-slot" onclick="parent.postMessage({
+          event: 'calendly.event_scheduled',
+          payload: {
+            invitee: { uri: 'https://api.calendly.com/scheduled_events/E1/invitees/I1' },
+            event: {
+              uri: 'https://api.calendly.com/scheduled_events/E1',
+              start_time: '2026-08-01T02:00:00.000Z',
+              end_time: '2026-08-01T02:45:00.000Z'
+            }
+          }
+        }, '*')">
+          Confirm this time
+        </button>
+      </body></html>`,
     });
   });
+
+  await page.route(/assets\.calendly\.com\/.*widget\.js/, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: `
+        window.Calendly = {
+          initInlineWidget: function (options) {
+            var frame = document.createElement('iframe');
+            frame.src = options.url;
+            frame.width = '100%';
+            frame.height = '700';
+            frame.setAttribute('data-testid', 'calendly-frame');
+            options.parentElement.appendChild(frame);
+          }
+        };
+      `,
+    }),
+  );
 
   await page.route(/checkout\.stripe\.com/, (route) =>
     route.fulfill({
@@ -762,8 +1064,12 @@ export async function stubApi(
     partnerPayload: () => partnerPayload,
     parentPayload: () => parentPayload,
     questionnairePayload: () => questionnairePayload,
+    leadPayload: () => leadPayload,
+    deletedProgressIds: () => [...deletedProgressIds],
+    intentQuery: () => intentQuery,
     calendlyUrl: () => calendlyUrl,
     statusCallCount: () => statusCalls,
+    reportedBooking: () => reportedBooking,
     resetStatusPolls: () => {
       statusCalls = 0;
     },

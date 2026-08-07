@@ -52,8 +52,27 @@ jobs:
 
       # `npm run build` runs tsc too, but as a separate step the failure
       # message says "types" rather than "build", which is a quicker read.
+      #
+      # Must be `tsc -b`, not `tsc --noEmit`: the root tsconfig is a solution
+      # file (`"files": []` + project references), so a bare tsc typechecks
+      # nothing at all and exits 0. This step was silently passing over two
+      # dozen real errors, including undefined identifiers that would throw at
+      # runtime. --force skips the incremental cache so CI always rechecks.
       - name: Typecheck
-        run: npx tsc --noEmit
+        run: npm run typecheck
+
+      # The E2E suite is its own TypeScript project and is NOT covered by the
+      # root `tsc --noEmit` above — the root config references only
+      # tsconfig.app.json and tsconfig.node.json, neither of which includes
+      # e2e/. Without this step a spec can call a page-object method that does
+      # not exist, pass every fast check, and fail thirty minutes later in the
+      # browser job as an unexplained locator timeout.
+      #
+      # It lives here rather than in the e2e job on purpose: it costs seconds,
+      # needs no browser, and catching it before `needs: verify` passes is the
+      # whole point.
+      - name: Typecheck E2E
+        run: npx tsc --noEmit -p e2e/tsconfig.json
 
       - name: Unit tests
         run: npm test

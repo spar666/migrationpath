@@ -21,6 +21,35 @@ export class ConsultPage {
     await this.page.goto('/consult/book');
   }
 
+  // --- Schedule (the embedded calendar) ---
+
+  async gotoSchedule(prospectId = PROSPECT_ID, ref = HUMAN_REF) {
+    await this.page.goto(
+      `/consult/schedule?prospect_id=${prospectId}&ref=${ref}`,
+    );
+  }
+
+  /** The Calendly iframe, once the widget script has mounted it. */
+  calendarFrame() {
+    return this.page.locator('[data-testid="calendly-frame"]');
+  }
+
+  /**
+   * Takes a slot inside the calendar.
+   *
+   * Clicking inside the iframe rather than posting the message from the test is
+   * the point: the page only trusts a scheduled-event message whose origin is
+   * calendly.com, and driving it from the frame is the only way to prove that
+   * check passes rather than that it was bypassed.
+   */
+  async pickSlot() {
+    await this.calendarFrame().waitFor({ timeout: 15_000 });
+    await this.page
+      .frameLocator('[data-testid="calendly-frame"]')
+      .locator('#pick-slot')
+      .click();
+  }
+
   async gotoConfirmed(prospectId = PROSPECT_ID, ref = HUMAN_REF) {
     await this.page.goto(
       `/consult/confirmed?prospect_id=${prospectId}&ref=${ref}`,
@@ -37,8 +66,9 @@ export class ConsultPage {
     return this.page.getByRole('button', { name: /choose a time/i });
   }
 
+  /** The heading shown once a slot is held and the fee is outstanding. */
   oneStepLeft() {
-    return this.page.getByText(/one step left/i);
+    return this.page.getByRole('heading', { name: /one step left/i });
   }
 
   /**

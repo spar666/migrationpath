@@ -181,7 +181,14 @@ test.describe('the questionnaire', () => {
     await waitForApp(page);
     await preScreen.startAsBusiness();
 
-    await expect(page.getByLabel(/business name/i)).toBeVisible();
+    // The fork shows up in the wording of step 1, not in a separate field: the
+    // same contact questions are asked, phrased as the business's contact
+    // rather than the applicant. Asserting on a "business name" input instead
+    // pinned a field that lives several steps later and never rendered here.
+    await expect(page.getByLabel(/what's your first name/i)).toBeVisible();
+    await expect(
+      page.getByText(/copy of the business' eligibility results/i),
+    ).toBeVisible();
   });
 
   test('lets someone who picked the wrong party go back and switch', async ({
@@ -197,7 +204,8 @@ test.describe('the questionnaire', () => {
 
     await expect(preScreen.applicantCard()).toBeVisible();
     await preScreen.startAsApplicant();
-    await expect(page.getByLabel(/business name/i)).toHaveCount(0);
+    await expect(page.getByLabel(/what's your first name/i)).toHaveCount(0);
+    await expect(page.getByLabel(/full name/i)).toBeVisible();
   });
 
   test('keeps answers when stepping back', async ({ page }) => {

@@ -89,6 +89,20 @@ export function PreScreenForm({
   const isLastStep = stepIndex === steps.length - 1;
   const progress = ((stepIndex + 1) / steps.length) * 100;
 
+  const patchAnswers = (patch: Answers) => {
+    setAnswers((prev) => {
+      const next = { ...prev, ...patch };
+      for (const s of steps) {
+        for (const f of s.fields) {
+          if (f.showWhen && next[f.id] !== undefined && !f.showWhen(next)) {
+            delete next[f.id];
+          }
+        }
+      }
+      return next;
+    });
+  };
+
   const setAnswer = (field: FieldDef, value: Answers[string]) => {
     setAnswers((prev) => {
       const next = { ...prev, [field.id]: value };
@@ -203,6 +217,7 @@ export function PreScreenForm({
               field={field}
               answers={answers}
               onChange={setAnswer}
+              onPatch={patchAnswers}
               error={showErrors ? validationError(field, answers) : null}
             />
           ))}

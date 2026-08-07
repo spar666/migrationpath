@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { pdf } from "@react-pdf/renderer";
 import {
   FileText,
   Download,
@@ -18,11 +17,20 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/apiClient";
-import { FinalizedStrategyPDF } from "@/components/prospectus/FinalizedStrategyPDF";
 import { format, differenceInYears, parseISO } from "date-fns";
 
 
-type QuestionnaireData = Tables<"consultation_questionnaires">;
+/**
+ * The consultation questionnaire as `/consultation/questionnaire/:userId`
+ * returns it.
+ *
+ * Was `Tables<"consultation_questionnaires">` — a Supabase generated-type
+ * helper left behind when the backend moved to NestJS, so it referenced a name
+ * that no longer exists anywhere. The endpoint returns free-form questionnaire
+ * JSON whose keys are authored in FormLogicEditor, so an index signature is an
+ * honest description rather than a placeholder.
+ */
+type QuestionnaireData = Record<string, any>;
 type EnglishScores = Record<string, number | string | null>;
 interface PartnerSkills {
   occupation?: string;
@@ -281,6 +289,13 @@ export function AdminStrategyPanel({
         generatedDate: format(new Date(), "MMMM d, yyyy"),
         dashboardUrl,
       };
+
+      // Same reason as the prospectus button: the renderer is only worth
+      // downloading once an agent actually asks for the document.
+      const [{ pdf }, { FinalizedStrategyPDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/components/prospectus/FinalizedStrategyPDF"),
+      ]);
 
       const blob = await pdf(<FinalizedStrategyPDF {...pdfProps} />).toBlob();
       const url = URL.createObjectURL(blob);

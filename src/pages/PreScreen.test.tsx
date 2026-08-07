@@ -1,11 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 const submit = vi.fn();
 vi.mock('@/services/preScreenService', () => ({
   preScreenService: { submit: (...a: unknown[]) => submit(...a) },
 }));
-vi.mock('@/lib/booking', () => ({ openScheduler: vi.fn() }));
+// PreScreenResult navigates to /consult/schedule, so the tree needs a router.
+const renderPreScreen = () =>
+  render(
+    <MemoryRouter>
+      <PreScreen />
+    </MemoryRouter>,
+  );
 
 const PreScreen = (await import('./PreScreen')).default;
 
@@ -29,43 +36,43 @@ beforeEach(() => {
 
 describe('the splash', () => {
   it('offers both parties', () => {
-    render(<PreScreen />);
+    renderPreScreen();
     expect(screen.getByText(/looking to be sponsored/i)).toBeInTheDocument();
     expect(screen.getByText(/business looking to sponsor/i)).toBeInTheDocument();
   });
 
   it('does not start the questionnaire until a party is chosen', () => {
-    render(<PreScreen />);
+    renderPreScreen();
     expect(screen.queryByText(/step 1 of/i)).toBeNull();
   });
 
   it('stays distraction-free — no site nav to leak clicks', () => {
-    render(<PreScreen />);
+    renderPreScreen();
     expect(screen.queryByRole('navigation')).toBeNull();
   });
 
   it('warns that this is not advice before anything is collected', () => {
-    render(<PreScreen />);
+    renderPreScreen();
     expect(screen.getByText(/not immigration advice/i)).toBeInTheDocument();
   });
 });
 
 describe('the party fork', () => {
   it('starts the applicant branch', () => {
-    render(<PreScreen />);
+    renderPreScreen();
     fireEvent.click(screen.getByText(/looking to be sponsored/i));
     expect(screen.getByText(/step 1 of/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/business name/i)).toBeNull();
   });
 
   it('starts the business branch', () => {
-    render(<PreScreen />);
+    renderPreScreen();
     fireEvent.click(screen.getByText(/business looking to sponsor/i));
-    expect(screen.getByLabelText(/business name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/what's your first name/i)).toBeInTheDocument();
   });
 
   it('lets someone who picked wrong go back and switch', () => {
-    render(<PreScreen />);
+    renderPreScreen();
     fireEvent.click(screen.getByText(/business looking to sponsor/i));
     fireEvent.click(screen.getByRole('button', { name: /back/i }));
 
@@ -77,29 +84,29 @@ describe('the party fork', () => {
 
 describe('search engine exclusion', () => {
   it('marks the funnel entry noindex', () => {
-    render(<PreScreen />);
+    renderPreScreen();
     expect(robotsTag()).toBe('noindex, nofollow');
   });
 
   it('removes the tag on unmount', () => {
     // This is an SPA. A robots tag left in <head> would follow the visitor to
     // every page they navigate to next and silently deindex the site.
-    const { unmount } = render(<PreScreen />);
+    const { unmount } = renderPreScreen();
     unmount();
     expect(document.head.querySelector('meta[name="robots"]')).toBeNull();
   });
 
   it('survives a remount without stacking duplicate tags', () => {
-    const first = render(<PreScreen />);
+    const first = renderPreScreen();
     first.unmount();
-    const second = render(<PreScreen />);
+    const second = renderPreScreen();
     expect(document.head.querySelectorAll('meta[name="robots"]')).toHaveLength(1);
     second.unmount();
   });
 
   it('restores the previous document title on unmount', () => {
     document.title = 'MigrationPath';
-    const { unmount } = render(<PreScreen />);
+    const { unmount } = renderPreScreen();
     expect(document.title).toMatch(/eligibility/i);
     unmount();
     expect(document.title).toBe('MigrationPath');
@@ -119,7 +126,7 @@ describe('reaching the result', () => {
       next_steps: [],
     });
 
-    render(<PreScreen />);
+    renderPreScreen();
     fireEvent.click(screen.getByText(/looking to be sponsored/i));
 
     const fill = (label: RegExp, value: string) =>

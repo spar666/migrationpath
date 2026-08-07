@@ -12,12 +12,19 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 
 const submit = vi.fn();
 vi.mock('@/services/preScreenService', () => ({
   preScreenService: { submit: (...a: unknown[]) => submit(...a) },
 }));
-vi.mock('@/lib/booking', () => ({ openScheduler: vi.fn() }));
+// PreScreenResult navigates to /consult/schedule, so the tree needs a router.
+const renderPreScreen = () =>
+  render(
+    <MemoryRouter>
+      <PreScreen />
+    </MemoryRouter>,
+  );
 
 const PreScreen = (await import('./pages/PreScreen')).default;
 
@@ -29,7 +36,7 @@ beforeEach(() => {
 });
 
 function startApplicant() {
-  render(<PreScreen />);
+  renderPreScreen();
   fireEvent.click(
     screen.getByRole('button', { name: /looking to be sponsored/i }),
   );
@@ -49,7 +56,7 @@ describe('splash selectors used by the page objects', () => {
   it('resolves each party card as exactly one button', () => {
     // getByRole throws on multiple matches, which mirrors Playwright's strict
     // mode — the reason the E2E uses getByRole here rather than getByText.
-    render(<PreScreen />);
+    renderPreScreen();
 
     expect(
       screen.getByRole('button', { name: /looking to be sponsored/i }),
@@ -62,7 +69,7 @@ describe('splash selectors used by the page objects', () => {
   it('keeps the two card names mutually exclusive', () => {
     // If "business looking to sponsor" also matched the applicant regex, the
     // E2E would click the wrong branch and fail somewhere far from the cause.
-    render(<PreScreen />);
+    renderPreScreen();
     expect(
       screen.getAllByRole('button', { name: /looking to be sponsored/i }),
     ).toHaveLength(1);
@@ -243,18 +250,18 @@ describe('failure selector used by PreScreenPage.submissionError()', () => {
 });
 
 describe('business branch selector', () => {
-  it('exposes "Business name" on the first step', () => {
-    render(<PreScreen />);
+  it('exposes the business contact fields on the first step', () => {
+    renderPreScreen();
     fireEvent.click(
       screen.getByRole('button', { name: /business looking to sponsor/i }),
     );
-    expect(screen.getByLabelText(/business name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/what's your first name/i)).toBeInTheDocument();
   });
 });
 
 describe('noindex assertion used by the e2e suite', () => {
   it('sets the meta tag the spec looks for', () => {
-    render(<PreScreen />);
+    renderPreScreen();
     expect(
       document.head.querySelector('meta[name="robots"]')?.getAttribute('content'),
     ).toMatch(/noindex/);

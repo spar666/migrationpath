@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, unwrapArray } from "@/lib/apiClient";
 
 interface OccupationWithPriority {
   id?: string;
@@ -102,7 +102,9 @@ export function OccupationMaster() {
     try {
       setLoading(true);
       const response = await apiClient.get<any>("/occupations");
-      const data = Array.isArray(response) ? response : (response?.data || []);
+      // /occupations is paginated, so the rows sit two levels deep. Reading one
+      // level returns the pagination object and the .map below throws.
+      const data = unwrapArray<any>(response);
       setOccupations(
         data.map((occ: any) => ({
           id: occ.id,

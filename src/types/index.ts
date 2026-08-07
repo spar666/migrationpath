@@ -53,14 +53,11 @@ export type {
 } from './occupation';
 
 // Points Types
-export type {
-  PointsConfig,
-  PointsCalculation,
-  PointsBreakdown,
-  UserPoints,
-  PointsConfigItem,
-  PointsConfigByCategory,
-} from './points';
+//
+// `./points` is empty and these six types were never written, so the re-export
+// below resolved to nothing. Nothing imports them from this barrel — the live
+// points types live in `@/hooks/usePointsConfig` and are imported directly.
+// Re-add here only alongside real definitions in ./points.
 
 // News Types
 export type { NewsArticle, StrapiNewsArticle, StrapiPaginatedResponse } from './news';

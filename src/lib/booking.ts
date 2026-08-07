@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/apiClient';
+import { CALENDLY_CONSULT_URL_FALLBACK } from '@/constants/cta';
 
 /**
  * The book-then-pay half of the funnel.
@@ -10,9 +11,9 @@ import { apiClient } from '@/lib/apiClient';
  * chosen over pay-then-book.
  */
 
-const CALENDLY_CONSULT_URL = import.meta.env.VITE_CALENDLY_CONSULT_URL as
-  | string
-  | undefined;
+const CALENDLY_CONSULT_URL =
+  (import.meta.env.VITE_CALENDLY_CONSULT_URL as string | undefined) ||
+  CALENDLY_CONSULT_URL_FALLBACK;
 
 export interface OpenSchedulerOptions {
   /** From the pre-screen result. Without it the booking cannot be linked. */
@@ -21,9 +22,11 @@ export interface OpenSchedulerOptions {
   email?: string;
   /** Shown to the prospect and passed through for reconciliation. */
   humanRef?: string;
+  /** Attribution: which funnel sent them. Lands in Calendly's utm_medium. */
+  medium?: string;
   /**
-   * Open in the same tab (default) or a new one. Same tab is usually right —
-   * Calendly's own confirmation page is a fine place to land.
+   * Open in the same tab (default) or a new one. Only meaningful for
+   * `openScheduler`; the inline embed ignores it.
    */
   target?: '_self' | '_blank';
 }
@@ -40,17 +43,16 @@ export interface OpenSchedulerOptions {
  * Prefilling name and email is not just convenience — a mismatch between the
  * Calendly invitee email and the prospect email is the main way a booking ends
  * up impossible to reconcile by hand.
+ *
+ * ⚠️ SENDING SOMEONE OFF-SITE LEAVES THE FUNNEL INCOMPLETE. Calendly's own
+ * confirmation screen is a dead end: the visitor has held a slot but not paid
+ * for it, and nothing brings them back to checkout unless the event type has
+ * "Redirect to an external site" configured in the Calendly dashboard — a
+ * setting outside this repo that nobody can see is missing. Prefer
+ * `schedulerUrl()` with the inline embed on /consult/schedule, which does the
+ * hand-back in code. This function remains for the off-site case.
  */
-export function openScheduler(options: OpenSchedulerOptions): void {
-  if (!CALENDLY_CONSULT_URL) {
-    // Loud rather than silent: a dead Book button is the single most expensive
-    // failure in this funnel.
-    console.error(
-      'VITE_CALENDLY_CONSULT_URL is not set — the scheduler cannot be opened.',
-    );
-    throw new Error('Scheduling is not configured.');
-  }
-
+export function schedulerUrl(options: OpenSchedulerOptions): string {
   if (!options.prospectId) {
     throw new Error('A prospect id is required to open the scheduler.');
   }
@@ -63,7 +65,7 @@ export function openScheduler(options: OpenSchedulerOptions): void {
     url.searchParams.set('utm_campaign', options.humanRef);
   }
   url.searchParams.set('utm_source', 'migrationpath');
-  url.searchParams.set('utm_medium', 'pre_screen');
+  url.searchParams.set('utm_medium', options.medium ?? 'pre_screen');
 
   if (options.name) url.searchParams.set('name', options.name);
   if (options.email) url.searchParams.set('email', options.email);
@@ -71,7 +73,11 @@ export function openScheduler(options: OpenSchedulerOptions): void {
   // Calendly's own styling params — harmless if the event type overrides them.
   url.searchParams.set('hide_gdpr_banner', '1');
 
-  window.open(url.toString(), options.target ?? '_self');
+  return url.toString();
+}
+
+export function openScheduler(options: OpenSchedulerOptions): void {
+  window.open(schedulerUrl(options), options.target ?? '_self');
 }
 
 export interface CheckoutSession {

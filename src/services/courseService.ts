@@ -15,6 +15,15 @@ export interface Course {
   isRegional: boolean;
   /** Derived tier: METRO / CATEGORY_2 / CATEGORY_3 / UNKNOWN. Read-only. */
   regionalCategory?: string | null;
+  /**
+   * Visa subclass numbers the linked occupation qualifies for, resolved
+   * server-side from `anzscoCode`. Read-only and only present on the detail
+   * endpoint (`GET /courses/:id`), which is why it is optional.
+   *
+   * ⚠️ Empty for every course until the occupation lists are imported — it is
+   * derived from occupation_visas, which is currently unpopulated.
+   */
+  visaSubclasses?: string[];
   isActive: boolean;
   /** @deprecated study-side detail; no longer captured or featured. */
   annualFees?: number;

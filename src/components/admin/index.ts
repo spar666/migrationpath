@@ -15,8 +15,8 @@ export { MigrationRulesPage } from "./MigrationRulesPage";
 export { InviteTrendsManager } from "./InviteTrendsManager";
 export { PointsConfigManager } from "./PointsConfigManager";
 export { ConsultationIntakeTab } from "./ConsultationIntakeTab";
-export { ConsultationManager } from "./ConsultationManager";
 export { LeadsManager } from "./LeadsManager";
+export { ProspectsManager } from "./ProspectsManager";
 export { AdminStrategyPanel } from "./AdminStrategyPanel";
 
 export { PolicyConfigManager } from "./PolicyConfigManager";

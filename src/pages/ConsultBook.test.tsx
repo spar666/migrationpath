@@ -3,15 +3,27 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 const payToConfirmConsultation = vi.fn();
-const openScheduler = vi.fn();
 vi.mock('@/lib/booking', () => ({
   payToConfirmConsultation: (...a: unknown[]) => payToConfirmConsultation(...a),
-  openScheduler: (...a: unknown[]) => openScheduler(...a),
+}));
+
+const navigate = vi.fn();
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual<typeof import('react-router-dom')>(
+    'react-router-dom',
+  )),
+  useNavigate: () => navigate,
 }));
 
 const get = vi.fn();
+const pollUntilBooked = vi.fn();
 vi.mock('@/services/prospectStatusService', () => ({
-  prospectStatusService: { get: (...a: unknown[]) => get(...a) },
+  prospectStatusService: {
+    get: (...a: unknown[]) => get(...a),
+    // The page polls for the Calendly webhook to land rather than reading
+    // once, so the mock has to answer the poll, not the single read.
+    pollUntilBooked: (...a: unknown[]) => pollUntilBooked(...a),
+  },
 }));
 
 const ConsultBook = (await import('./ConsultBook')).default;
@@ -55,8 +67,19 @@ const payButton = () => screen.queryByRole('button', { name: /pay to confirm/i }
 beforeEach(() => {
   localStorage.clear();
   payToConfirmConsultation.mockReset();
-  openScheduler.mockReset();
+  navigate.mockReset();
   get.mockReset();
+  // Mirrors the real poll's contract: return the status once a booking
+  // appears, and swallow read failures by resolving null. Specs drive it
+  // through `get`, so a rejection here means "we never found out" rather
+  // than "there is definitively no booking" — a distinction the page acts on.
+  pollUntilBooked.mockImplementation(async (...a: unknown[]) => {
+    try {
+      return await get(...a);
+    } catch {
+      return null;
+    }
+  });
 });
 
 describe('with a held, unpaid booking', () => {
@@ -171,13 +194,57 @@ describe('with no slot booked yet', () => {
     ).toBeInTheDocument();
   });
 
-  it('passes the identity through to the scheduler', async () => {
+  it('does not offer to pay for a slot that does not exist', async () => {
+    // Checkout needs a booking to attach the payment to and rejects the
+    // request without one, so a pay button here has exactly one outcome: an
+    // error. Withholding it is the honest version of the same information.
+    get.mockResolvedValue(status({ booking: null }));
+    landOn('?prospect_id=p1&ref=MP-7F3K9A');
+
+    await screen.findByRole('button', { name: /choose a time/i });
+    expect(payButton()).not.toBeInTheDocument();
+  });
+
+  it('waits for the webhook before concluding there is no booking', async () => {
+    // The booking row is written by Calendly's invitee webhook, which races the
+    // visitor's browser. Someone who books and immediately pays can arrive
+    // first, and treating that as "no booking" is how they end up being told to
+    // choose a time they have already chosen.
+    get
+      .mockResolvedValueOnce(status({ booking: null }))
+      .mockResolvedValue(status());
+    pollUntilBooked.mockImplementation(async () => {
+      // Two reads: the webhook lands between them.
+      await get();
+      return get();
+    });
+    landOn('?prospect_id=p1&ref=MP-7F3K9A');
+
+    expect(await screen.findByText(/one step left/i)).toBeInTheDocument();
+    expect(payButton()).toBeInTheDocument();
+  });
+
+  it('lets them re-check rather than only start over', async () => {
+    get.mockResolvedValue(status({ booking: null }));
+    landOn('?prospect_id=p1&ref=MP-7F3K9A');
+
+    const recheck = await screen.findByRole('button', { name: /check again/i });
+    get.mockResolvedValue(status());
+    fireEvent.click(recheck);
+
+    expect(await screen.findByText(/one step left/i)).toBeInTheDocument();
+  });
+
+  it('sends them to the calendar we host, carrying the identity', async () => {
+    // Not to calendly.com. Off-site the visitor ends on Calendly's own
+    // /invitees/<uuid> confirmation page — slot held, fee unpaid, and no route
+    // back to this screen, which is the entire point of it.
     get.mockResolvedValue(status({ booking: null }));
     landOn('?prospect_id=p1&ref=MP-7F3K9A');
 
     fireEvent.click(await screen.findByRole('button', { name: /choose a time/i }));
-    expect(openScheduler).toHaveBeenCalledWith(
-      expect.objectContaining({ prospectId: 'p1', humanRef: 'MP-7F3K9A' }),
+    expect(navigate).toHaveBeenCalledWith(
+      '/consult/schedule?prospect_id=p1&ref=MP-7F3K9A',
     );
   });
 });

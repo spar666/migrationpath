@@ -17,7 +17,24 @@ export type FieldType =
   | "text"
   | "textarea"
   | "date"
-  | "email";
+  | "email"
+  /** A single required tickbox. Distinct from "checkboxes", which is multi-select. */
+  | "consent";
+
+/**
+ * The collection notice, in the exact words shown on screen.
+ *
+ * Submitted with the answers and stored verbatim against the prospect. Keep it
+ * here as a single constant rather than inline in JSX: if the wording is ever
+ * changed, records created before the change must still show the text that
+ * person actually agreed to, and that only works if what we display and what we
+ * send can never drift apart.
+ */
+export const CONSENT_NOTICE =
+  "I agree that MigrationPath may store the answers I have given and my " +
+  "contact details, and may contact me about my partner visa enquiry. I " +
+  "understand this assessment is not immigration advice and is not a decision " +
+  "by the Department of Home Affairs.";
 
 export interface FieldDef {
   id: string;
@@ -802,6 +819,12 @@ export const FORM_STEPS: StepDef[] = [
         type: "email",
         label: "What is your email address?",
         maxLength: 255,
+      },
+      {
+        id: "consent",
+        type: "consent",
+        label: CONSENT_NOTICE,
+        hint: "We need this before we can save your assessment.",
       },
     ],
   },

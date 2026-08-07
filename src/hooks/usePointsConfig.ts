@@ -2,6 +2,12 @@ import { useState, useEffect } from "react";
 import { apiClient } from "@/lib/apiClient";
 import { MigrationRule, VisaGroup } from "@/types/migrationRules";
 
+/**
+ * One selectable points option, as `/points/config` returns it. Named for the
+ * concept the wizard deals in; the shape is the migration rule itself.
+ */
+export type PointsConfigItem = MigrationRule;
+
 export interface PointsConfigByCategory {
   [category: string]: MigrationRule[];
 }

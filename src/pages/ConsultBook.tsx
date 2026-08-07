@@ -1,18 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
   CalendarCheck,
+  CalendarClock,
   CreditCard,
   Loader2,
   ShieldCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { openScheduler, payToConfirmConsultation } from '@/lib/booking';
-import { getProspectSession, resolveProspect } from '@/lib/prospectSession';
+import { payToConfirmConsultation } from '@/lib/booking';
+import { clearProspectSession, resolveProspect } from '@/lib/prospectSession';
 import { getErrorMessage } from '@/lib/errorHandler';
-import { prospectStatusService, type ProspectStatus } from '@/services/prospectStatusService';
+import {
+  isUnknownProspect,
+  prospectStatusService,
+  type ProspectStatus,
+} from '@/services/prospectStatusService';
 
 /**
  * The pay-to-confirm step, and the page Stripe sends people back to when they
@@ -46,11 +51,20 @@ export default function ConsultBook() {
     () => resolveProspect(window.location.search),
     [],
   );
-  const session = useMemo(() => getProspectSession(), []);
+  const navigate = useNavigate();
 
   const [status, setStatus] = useState<ProspectStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [rechecking, setRechecking] = useState(false);
+  /**
+   * The stored identity is not one the server recognises.
+   *
+   * localStorage outlives the database. After a reset — or a record that was
+   * never committed — the browser keeps presenting a reference nothing knows,
+   * and without this the visitor is offered a pay button that can only 404.
+   */
+  const [unknownProspect, setUnknownProspect] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,17 +77,29 @@ export default function ConsultBook() {
       return;
     }
 
+    const controller = new AbortController();
     let cancelled = false;
+
+    // Polled rather than read once. Arriving here straight from the calendar
+    // races Calendly's invitee webhook, which is what actually creates the
+    // booking row — and losing that race used to mean checkout rejected them
+    // with "choose a consultation time before paying", the one message that
+    // makes no sense to someone who has just chosen one.
     prospectStatusService
-      .get(prospectId, humanRef)
+      .pollUntilBooked(prospectId, humanRef, { signal: controller.signal })
       .then((s) => {
-        if (!cancelled) setStatus(s);
+        if (!cancelled && s) setStatus(s);
       })
-      .catch((err) => {
-        // Non-fatal. Not being able to read the booking should not block the
-        // pay button — the checkout call resolves the booking server side
-        // anyway, and a visitor who can't pay is a lost sale.
-        console.error('Could not read prospect status:', err);
+      .catch((error) => {
+        if (cancelled) return;
+        if (isUnknownProspect(error)) {
+          // Drop it rather than let a dead reference follow them around for
+          // the rest of its seven-day TTL.
+          clearProspectSession();
+          setUnknownProspect(true);
+          return;
+        }
+        console.error('Could not read prospect status:', error);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -81,6 +107,7 @@ export default function ConsultBook() {
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [prospectId, humanRef]);
 
@@ -103,27 +130,39 @@ export default function ConsultBook() {
     }
   };
 
-  const rebook = () => {
-    if (!prospectId) return;
+  /** Manual retry for a webhook that took longer than the initial wait. */
+  const recheck = async () => {
+    if (!prospectId || !humanRef) return;
+    setRechecking(true);
     try {
-      openScheduler({
+      const s = await prospectStatusService.pollUntilBooked(
         prospectId,
-        humanRef: humanRef ?? undefined,
-        name: session?.name,
-        email: session?.email,
-      });
-    } catch (err) {
-      console.error('Could not open the scheduler:', err);
-      setError(
-        'We could not open the booking calendar. Please contact us and quote your reference.',
+        humanRef,
+        { attempts: 2 },
       );
+      if (s) setStatus(s);
+    } finally {
+      setRechecking(false);
     }
   };
 
-  // No identity at all — a cold visitor, a cleared browser, or a link that
-  // lost its query string. Send them back to the start rather than showing a
-  // pay button that cannot work.
-  if (!prospectId || !humanRef) {
+  /**
+   * Back to the calendar for someone who reached this page without a slot.
+   *
+   * Goes to our own /consult/schedule rather than opening calendly.com: the
+   * off-site version dropped them on Calendly's `/invitees/<uuid>` confirmation
+   * page with the slot held and the fee unpaid, and nothing on that page leads
+   * back here. The whole point of this screen is the payment that follows.
+   */
+  const rebook = () => {
+    if (!prospectId) return;
+    navigate(`/consult/schedule?prospect_id=${prospectId}&ref=${humanRef ?? ''}`);
+  };
+
+  // No identity, or an identity the server does not recognise. Both mean the
+  // same thing to the visitor — there is nothing here to pay for — and both
+  // want the same screen rather than a pay button that can only fail.
+  if (!prospectId || !humanRef || unknownProspect) {
     return (
       <Shell>
         <h1 className="text-2xl font-bold text-navy">
@@ -146,13 +185,19 @@ export default function ConsultBook() {
     status?.consult_confirmed || status?.booking?.status === 'confirmed';
   const slot = formatSlot(status?.booking?.scheduled_at ?? null);
   const hasBooking = Boolean(status?.booking);
-
+  // A read that SUCCEEDED and came back with no booking. Distinct from a read
+  // that never succeeded (status === null), where we simply do not know.
+  const knownWithoutBooking = status !== null && !status.booking;
   if (loading) {
     return (
       <Shell>
         <div className="flex items-center gap-3 text-navy-muted">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Loading your booking…</span>
+          {/* Says "confirming", not "loading". Someone arriving straight from
+              the calendar is watching us wait for their booking to register,
+              and the wording should tell them their time was taken rather than
+              leaving them wondering whether it was. */}
+          <span>Confirming the time you picked…</span>
         </div>
       </Shell>
     );
@@ -187,6 +232,66 @@ export default function ConsultBook() {
     );
   }
 
+  // Waited for the webhook and were told, definitively, that there is no
+  // booking.
+  //
+  // No pay button here, deliberately. Checkout requires a booking to attach the
+  // payment to and rejects the request without one, so offering to pay would
+  // send them to a button whose only outcome is an error.
+  //
+  // Note the condition: `knownWithoutBooking`, not `!hasBooking`. If we could
+  // not read the status at all we do not know whether they have a slot, and the
+  // optimistic branch below is the right one — the backend is the authority,
+  // and hiding the pay button from someone who does hold a booking is a lost
+  // sale caused by our own failed read.
+  if (knownWithoutBooking) {
+    return (
+      <Shell>
+        <span className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-navy/5">
+          <CalendarClock className="h-7 w-7 text-navy" />
+        </span>
+
+        <h1 className="text-2xl font-bold text-navy md:text-3xl">
+          We have not got your time yet
+        </h1>
+
+        <p className="mt-4 leading-relaxed text-navy-muted">
+          If you have just picked a slot, it can take a few moments to reach us
+          — check again in a second. If you have not chosen a time yet, start
+          there.
+        </p>
+
+        <Button
+          variant="elite"
+          size="lg"
+          className="mt-8 h-12 w-full gap-2"
+          onClick={recheck}
+          disabled={rechecking}
+        >
+          {rechecking ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Checking…
+            </>
+          ) : (
+            'Check again'
+          )}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="lg"
+          className="mt-3 h-12 w-full"
+          onClick={rebook}
+        >
+          Choose a time
+        </Button>
+
+        <ReferenceFooter humanRef={humanRef} />
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
       <span className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gold/15">
@@ -194,9 +299,7 @@ export default function ConsultBook() {
       </span>
 
       <h1 className="text-2xl font-bold text-navy md:text-3xl">
-        {hasBooking
-          ? 'One step left — confirm your time'
-          : 'Pick a time, then confirm it'}
+        One step left — confirm your time
       </h1>
 
       {slot && (
@@ -209,22 +312,16 @@ export default function ConsultBook() {
       )}
 
       <p className="mt-6 leading-relaxed text-navy-muted">
-        {hasBooking
-          ? 'Your time is held but not yet confirmed. Paying the consultation fee confirms it and puts your assessment in front of the agent before the call.'
-          : 'We could not find a booked time against your reference yet. If you have just picked one, give it a moment and refresh — otherwise choose a time first.'}
+        Your time is held but not yet confirmed. Paying the consultation fee
+        confirms it and puts your assessment in front of the agent before the
+        call.
       </p>
 
-      {!hasBooking && (
-        <Button
-          variant="outline"
-          size="lg"
-          className="mt-6 h-12 w-full"
-          onClick={rebook}
-        >
-          Choose a time
-        </Button>
-      )}
-
+      {/* Pay now is the primary action and pay later is secondary, but both are
+          real choices rather than one option and an escape hatch. Someone who
+          needs to check with a partner before spending money will leave the
+          page either way; offered the choice they leave having told us so, and
+          land somewhere that can bring them back. */}
       <Button
         variant="elite"
         size="lg"
@@ -250,6 +347,7 @@ export default function ConsultBook() {
         Payment is handled by Stripe. Card details never touch our systems.
       </p>
 
+
       {error && (
         <p className="mt-6 flex gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -257,11 +355,17 @@ export default function ConsultBook() {
         </p>
       )}
 
-      <div className="mt-8 border-t border-navy/10 pt-6 text-sm text-navy-muted">
-        Reference:{' '}
-        <span className="font-mono font-semibold text-navy">{humanRef}</span>
-      </div>
+      <ReferenceFooter humanRef={humanRef} />
     </Shell>
+  );
+}
+
+function ReferenceFooter({ humanRef }: { humanRef: string | null }) {
+  return (
+    <div className="mt-8 border-t border-navy/10 pt-6 text-sm text-navy-muted">
+      Reference:{' '}
+      <span className="font-mono font-semibold text-navy">{humanRef}</span>
+    </div>
   );
 }
 

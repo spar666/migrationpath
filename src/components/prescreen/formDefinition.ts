@@ -35,7 +35,17 @@ export type FieldType =
   | 'text'
   | 'number'
   | 'email'
-  | 'tel';
+  | 'tel'
+  /** Async picker over the occupations catalogue. Resolves an ANZSCO code. */
+  | 'occupation';
+
+/**
+ * The occupation picker writes these alongside its own field, so the ANZSCO
+ * code sent to the engine always came from the catalogue rather than a
+ * free-text guess.
+ */
+export const OCCUPATION_CODE_FIELD = 'occupation_code';
+export const OCCUPATION_LIST_FIELD = 'occupation_list';
 
 export interface FieldDef {
   id: string;
@@ -94,6 +104,107 @@ export const STATE_CODES: Record<string, string> = {
 };
 
 const YES_NO_UNSURE = ['Yes', 'No', 'Not sure'];
+
+/**
+ * Strict yes/no, used by the business branch.
+ *
+ * The applicant branch offers "Not sure" because an individual genuinely may
+ * not know their own English band or skills-assessment status. A business
+ * answering about its own trading history does know, and an opt-out there just
+ * produces blanks the agent has to chase.
+ */
+const YES_NO = ['Yes', 'No'];
+
+/**
+ * ⚠️ Display only — the authoritative figure lives in the backend config
+ * (CORE_SKILLS_INCOME_THRESHOLD). Repeated here because the salary question is
+ * meaningless without telling people what they are being measured against.
+ * Keep the two in step; it is indexed annually.
+ */
+export const CORE_SKILLS_INCOME_THRESHOLD = 73_150;
+
+function fmtAud(value: number): string {
+  return value.toLocaleString('en-AU');
+}
+
+/**
+ * Banded answers.
+ *
+ * Bands beat a free-text figure here: businesses give a range far more readily
+ * than an exact number, and the engine only ever compares against thresholds.
+ *
+ * Each band maps to its LOWER bound for the engine. That is the conservative
+ * reading — a business in the "$70,000 - $80,000" band straddles the income
+ * threshold, and assuming the top of the band would hand out an "eligible"
+ * that the payroll might not support. The band label is stored verbatim too,
+ * so the agent sees the range the business actually chose.
+ */
+const SALARY_BANDS = [
+  'Less than $70,000',
+  '$70,000 - $80,000',
+  '$80,000 - $100,000',
+  '$100,000 - $120,000',
+  '$120,000 - $140,000',
+  'More than $140,000',
+];
+
+const SALARY_BAND_FLOOR: Record<string, number> = {
+  'Less than $70,000': 0,
+  '$70,000 - $80,000': 70_000,
+  '$80,000 - $100,000': 80_000,
+  '$100,000 - $120,000': 100_000,
+  '$120,000 - $140,000': 120_000,
+  'More than $140,000': 140_000,
+};
+
+const CURRENT_PAY_BANDS = [...SALARY_BANDS, "I don't know"];
+
+const REVENUE_BANDS = [
+  'Less than $500,000',
+  '$500,000 - $1M',
+  '$1M - $5M',
+  '$5M - $10M',
+  '$10M - $15M',
+  '$15M or more',
+];
+
+const YEARS_OPERATING_BANDS = [
+  'Less than 1 year',
+  '1 - 2 years',
+  '2 - 3 years',
+  '3 - 4 years',
+  '4 years or more',
+  'It does not operate in Australia',
+];
+
+const YEARS_OPERATING_FLOOR: Record<string, number> = {
+  'Less than 1 year': 0,
+  '1 - 2 years': 1,
+  '2 - 3 years': 2,
+  '3 - 4 years': 3,
+  '4 years or more': 4,
+  'It does not operate in Australia': 0,
+};
+
+const HEADCOUNT_BANDS = ['Less than 5', '5 - 10', '10 - 20', '21 or more'];
+
+const HEADCOUNT_FLOOR: Record<string, number> = {
+  'Less than 5': 0,
+  '5 - 10': 5,
+  '10 - 20': 10,
+  '21 or more': 21,
+};
+
+const REFERRAL_SOURCES = [
+  'Google',
+  'ChatGPT (or equivalent)',
+  'LinkedIn',
+  'Facebook',
+  'Instagram',
+  'TikTok',
+  'Referral',
+  'Other',
+];
 
 /**
  * The employer-sponsored subclasses this funnel screens for. Labels carry the
@@ -162,6 +273,20 @@ function bool(a: Answers, id: string): boolean | undefined {
   return undefined;
 }
 
+/**
+ * A band label -> the numeric floor the engine tests against. Returns
+ * undefined for "I don't know" and anything unmapped, so an evasion stays an
+ * open question rather than becoming a confident zero.
+ */
+function bandFloor(
+  a: Answers,
+  id: string,
+  floors: Record<string, number>,
+): number | undefined {
+  const raw = str(a, id);
+  return raw ? floors[raw] : undefined;
+}
+
 function stateCode(a: Answers, id: string): string | undefined {
   const raw = str(a, id);
   return raw ? (STATE_CODES[raw] ?? raw) : undefined;
@@ -186,13 +311,11 @@ export const CONSENT_TEXT =
   'This assessment is a preliminary indication only and is not immigration advice.';
 
 function contactStep(party: ProspectParty): StepDef {
+  const business = party === 'business';
   return {
     id: 'contact',
     name: 'Your details',
-    title:
-      party === 'business'
-        ? 'Who should we speak to?'
-        : 'First, how do we reach you?',
+    title: business ? 'Who should we speak to?' : 'First, how do we reach you?',
     intro:
       'We use these to send your assessment and, if you go ahead, to set up ' +
       'your consultation.',
@@ -200,34 +323,31 @@ function contactStep(party: ProspectParty): StepDef {
       {
         id: 'full_name',
         type: 'text',
-        label: 'Full name',
+        label: business ? "What's your first name?" : 'Full name',
+        hint: business
+          ? 'We need the first name as contact for the business'
+          : undefined,
         maxLength: 120,
       },
       {
         id: 'email',
         type: 'email',
-        label: 'Email address',
+        label: business
+          ? 'What is the best email to contact you?'
+          : 'Email address',
+        hint: business
+          ? "We'll send a copy of the business' eligibility results to your email."
+          : undefined,
         placeholder: 'you@example.com',
       },
       {
         id: 'phone',
         type: 'tel',
-        label: 'Phone number',
+        label: business ? "What's your contact number?" : 'Phone number',
         hint: 'Optional, but it is the fastest way for an agent to reach you.',
         required: false,
         maxLength: 32,
       },
-      ...(party === 'business'
-        ? [
-            {
-              id: 'trading_name',
-              type: 'text' as const,
-              label: 'Business name',
-              hint: 'The name you trade under. We ask for the registered legal name separately, in case they differ.',
-              maxLength: 160,
-            },
-          ]
-        : []),
     ],
   };
 }
@@ -417,59 +537,29 @@ export const BUSINESS_STEPS: StepDef[] = [
   contactStep('business'),
   {
     id: 'business',
-    name: 'Your business',
-    title: 'About the business',
+    name: 'The business',
+    title: "Let's get started",
     fields: [
       {
         id: 'legal_name',
         type: 'text',
-        label: 'Registered legal name',
-        hint: 'As it appears on the ABN register, if that differs from your trading name.',
-        maxLength: 160,
+        label: 'What is the name of the business?',
+        hint: 'Make sure this is the business entity that is employing the applicant.',
+        maxLength: 200,
       },
       {
         id: 'abn',
         type: 'text',
-        label: 'ABN',
-        required: false,
+        label: 'What is the ABN of the business?',
+        hint: 'Make sure this is the business entity that is employing the applicant.',
         maxLength: 20,
         placeholder: '11 222 333 444',
       },
       {
-        id: 'industry',
+        id: 'business_address',
         type: 'text',
-        label: 'Industry',
-        required: false,
-        maxLength: 120,
-      },
-      {
-        id: 'years_trading',
-        type: 'number',
-        label: 'How many years has the business been trading?',
-        hint: 'A lawfully operating business is a sponsorship requirement, and new businesses are assessed more closely.',
-        min: 0,
-        max: 200,
-      },
-      {
-        id: 'employee_count',
-        type: 'number',
-        label: 'How many people do you employ?',
-        required: false,
-        min: 0,
-      },
-      {
-        id: 'state',
-        type: 'select',
-        label: 'Which state or territory is the business based in?',
-        options: AU_STATES,
-      },
-      {
-        id: 'postcode',
-        type: 'text',
-        label: 'Business postcode',
-        hint: 'Regional postcodes open up options that metropolitan ones do not.',
-        required: false,
-        maxLength: 4,
+        label: 'What is the business address?',
+        maxLength: 300,
       },
     ],
   },
@@ -479,25 +569,20 @@ export const BUSINESS_STEPS: StepDef[] = [
     title: 'Your sponsorship position',
     fields: [
       {
-        id: 'sponsorship_status',
+        id: 'sponsored_last_5_years',
         type: 'radio',
-        label: 'Are you already an approved sponsor?',
-        options: SPONSORSHIP_STATUS_OPTIONS,
+        label: 'Has the business sponsored an employee in the last 5 years?',
+        options: YES_NO,
       },
       {
-        id: 'meets_training_obligations',
+        // Only worth asking of a business that has sponsored before — asking
+        // everyone produces a guess from people who have never heard the term.
+        id: 'is_standard_business_sponsor',
         type: 'radio',
-        label: 'Are your Skilling Australians Fund contributions up to date?',
-        hint: 'If you have never sponsored before, answer "Not sure" — it will not count against you.',
-        options: YES_NO_UNSURE,
-      },
-      {
-        id: 'has_adverse_information',
-        type: 'radio',
-        label:
-          'Has the business had any adverse findings — underpayment, sanctions, or a failed monitoring visit?',
-        hint: 'Adverse information is assessed, not automatically fatal. We plan around it.',
-        options: YES_NO_UNSURE,
+        label: 'Is the business a Standard Business Sponsor (SBS)?',
+        hint: 'A Standard Business Sponsor (SBS) is an Australian or overseas business approved by the Department of Home Affairs to nominate skilled foreign workers for visas. It is granted for 5 years.',
+        options: YES_NO,
+        showWhen: (a) => a.sponsored_last_5_years === 'Yes',
       },
     ],
   },
@@ -505,104 +590,107 @@ export const BUSINESS_STEPS: StepDef[] = [
     id: 'role',
     name: 'The role',
     title: 'The role you want to fill',
-    intro: 'One role for now — we can add others on the call.',
-    fields: [
-      {
-        id: 'occupation_name',
-        type: 'text',
-        label: 'Job title',
-        maxLength: 120,
-      },
-      {
-        id: 'occupation_code',
-        type: 'text',
-        label: 'ANZSCO code, if you know it',
-        hint: 'Six digits, e.g. 261313. Leave blank if unsure — we confirm it anyway.',
-        required: false,
-        maxLength: 12,
-      },
-      {
-        id: 'annual_salary',
-        type: 'number',
-        label: 'Annual salary for the role (AUD)',
-        hint: 'Base salary excluding super. This must clear the income threshold and the market rate for the job.',
-        min: 0,
-      },
-      {
-        id: 'work_state',
-        type: 'select',
-        label: 'Where will the person work?',
-        options: AU_STATES,
-      },
-      {
-        id: 'work_postcode',
-        type: 'text',
-        label: 'Work postcode',
-        required: false,
-        maxLength: 4,
-      },
-      {
-        id: 'subclass',
-        type: 'radio',
-        label: 'Which visa were you thinking of?',
-        options: SUBCLASS_OPTIONS,
-        required: false,
-      },
-      {
-        id: 'lmt_completed',
-        type: 'radio',
-        label: 'Have you advertised the role locally yet?',
-        hint: 'Labour market testing. There is a required form and timing, so tell us before you advertise if you have not.',
-        options: YES_NO_UNSURE,
-      },
-    ],
-  },
-  {
-    id: 'candidate',
-    name: 'Candidate',
-    title: 'Do you have someone in mind?',
     fields: [
       {
         id: 'has_candidate',
         type: 'radio',
-        label: 'Have you identified the person you want to sponsor?',
-        options: ['Yes', 'No — we need to find someone'],
+        label:
+          'Does the business have a candidate you wish to sponsor for an Australian visa?',
+        hint: 'The candidate may be a current employee or a person that the business would like to employ in the future.',
+        options: YES_NO,
       },
       {
-        id: 'candidate_age',
-        type: 'number',
-        label: 'Their age',
+        id: 'position_title',
+        type: 'text',
+        label:
+          'What is the position title of the role that the business plans to nominate for?',
+        hint: 'This may be current role title of the candidate if they are an existing employee.',
+        maxLength: 200,
         required: false,
-        min: 15,
-        max: 99,
+      },
+      {
+        id: 'occupation_name',
+        type: 'occupation',
+        label:
+          'Select the most relevant occupation from the Core Skills Occupation List',
+        hint: "Start typing the occupation into the text box. The Core Skills Occupation List is the Government's list of occupations that a business can nominate under.",
+      },
+      {
+        id: 'salary_band',
+        type: 'select',
+        label: 'What is the salary for the role?',
+        hint: `The current Core Skills Income Threshold is $${fmtAud(
+          CORE_SKILLS_INCOME_THRESHOLD,
+        )}. This is the minimum salary that a sponsored candidate can be paid under a 482 visa. This threshold does not include super.`,
+        options: SALARY_BANDS,
+      },
+      {
+        id: 'candidate_current_pay_band',
+        type: 'select',
+        label: 'What is the applicant or employee currently paid?',
+        hint: "If you are unsure, choose 'I don't know'",
+        options: CURRENT_PAY_BANDS,
+        required: false,
         showWhen: (a) => a.has_candidate === 'Yes',
       },
+    ],
+  },
+  {
+    id: 'trading',
+    name: 'Trading',
+    title: 'About the business',
+    fields: [
       {
-        id: 'candidate_onshore',
+        id: 'annual_revenue_band',
+        type: 'select',
+        label:
+          'What was the annual revenue of the business last financial year?',
+        hint: 'Select the most accurate.',
+        options: REVENUE_BANDS,
+      },
+      {
+        id: 'years_operating_band',
+        type: 'select',
+        label: 'How long has the business been operating for in Australia?',
+        hint: 'Choose the most accurate.',
+        options: YEARS_OPERATING_BANDS,
+      },
+      {
+        id: 'operates_only_in_australia',
         type: 'radio',
-        label: 'Are they already in Australia?',
-        options: YES_NO_UNSURE,
+        label: 'Does the business operate only in Australia?',
+        options: YES_NO,
         required: false,
-        showWhen: (a) => a.has_candidate === 'Yes',
+      },
+    ],
+  },
+  {
+    id: 'employees',
+    name: 'Employees',
+    title: 'Your team',
+    fields: [
+      {
+        id: 'employee_count_band',
+        type: 'select',
+        label:
+          'How many employees are currently employed full time by the business are based in Australia?',
+        hint: 'Choose the most accurate',
+        options: HEADCOUNT_BANDS,
       },
       {
-        id: 'candidate_years_experience',
-        type: 'number',
-        label: 'Years of experience in the role',
+        id: 'has_temporary_visa_employees',
+        type: 'radio',
+        label:
+          'Are any of the current employees on a temporary visa in Australia?',
+        options: YES_NO,
         required: false,
-        min: 0,
-        max: 60,
-        showWhen: (a) => a.has_candidate === 'Yes',
       },
       {
-        id: 'candidate_english_overall',
-        type: 'number',
-        label: 'Their overall English score (IELTS equivalent)',
-        hint: 'Leave blank if they have not tested.',
+        id: 'referral_source',
+        type: 'select',
+        label: 'How did you hear about us?',
+        options: REFERRAL_SOURCES,
         required: false,
-        min: 0,
-        max: 9,
-        showWhen: (a) => a.has_candidate === 'Yes',
       },
     ],
   },
@@ -676,30 +764,59 @@ export function toApplicantPayload(a: Answers): SubmitPreScreenPayload {
   };
 }
 
-export function toBusinessPayload(a: Answers): SubmitPreScreenPayload {
-  const sponsorshipLabel = str(a, 'sponsorship_status');
+/**
+ * The questionnaire asks about Standard Business Sponsorship in the plain terms
+ * a business recognises; the engine wants the sponsorship_status enum. Derive
+ * one from the other rather than asking twice.
+ *
+ * A business that has not sponsored in five years is never asked the SBS
+ * question at all, and stays `undefined` — "we did not ask" is not the same
+ * fact as "they are not a sponsor", and only the enum's 'prospective' would
+ * imply we had checked.
+ */
+function sponsorshipStatusFrom(
+  a: Answers,
+): PreScreenSponsor['sponsorship_status'] {
+  const sbs = bool(a, 'is_standard_business_sponsor');
+  if (sbs === true) return 'approved';
+  if (sbs === false) return 'lapsed';
+  return undefined;
+}
 
+export function toBusinessPayload(a: Answers): SubmitPreScreenPayload {
   const sponsor: PreScreenSponsor = {
     legal_name: str(a, 'legal_name'),
     trading_name: str(a, 'trading_name'),
     abn: str(a, 'abn'),
     industry: str(a, 'industry'),
-    employee_count: num(a, 'employee_count'),
-    years_trading: num(a, 'years_trading'),
+    business_address: str(a, 'business_address'),
+    is_standard_business_sponsor: bool(a, 'is_standard_business_sponsor'),
+    // The banded answers carry both forms: the label the business chose, and
+    // its floor for the engine's numeric tests.
+    employee_count: bandFloor(a, 'employee_count_band', HEADCOUNT_FLOOR),
+    employee_count_band: str(a, 'employee_count_band'),
+    years_trading: bandFloor(a, 'years_operating_band', YEARS_OPERATING_FLOOR),
+    years_operating_band: str(a, 'years_operating_band'),
+    annual_revenue_band: str(a, 'annual_revenue_band'),
+    operates_only_in_australia: bool(a, 'operates_only_in_australia'),
+    has_temporary_visa_employees: bool(a, 'has_temporary_visa_employees'),
+    sponsored_last_5_years: bool(a, 'sponsored_last_5_years'),
+    referral_source: str(a, 'referral_source'),
     state: stateCode(a, 'state'),
     postcode: str(a, 'postcode'),
-    sponsorship_status: sponsorshipLabel
-      ? SPONSORSHIP_STATUS_VALUES[sponsorshipLabel]
-      : undefined,
+    sponsorship_status: sponsorshipStatusFrom(a),
     has_adverse_information: bool(a, 'has_adverse_information'),
     meets_training_obligations: bool(a, 'meets_training_obligations'),
   };
 
   const nomination: PreScreenNomination = {
-    occupation_code: str(a, 'occupation_code'),
+    occupation_code: str(a, OCCUPATION_CODE_FIELD),
     occupation_name: str(a, 'occupation_name'),
+    position_title: str(a, 'position_title'),
     subclass: subclass(a, 'subclass'),
-    annual_salary: num(a, 'annual_salary'),
+    annual_salary: bandFloor(a, 'salary_band', SALARY_BAND_FLOOR),
+    salary_band: str(a, 'salary_band'),
+    candidate_current_pay_band: str(a, 'candidate_current_pay_band'),
     work_state: stateCode(a, 'work_state'),
     work_postcode: str(a, 'work_postcode'),
     lmt_completed: bool(a, 'lmt_completed'),
@@ -717,7 +834,7 @@ export function toBusinessPayload(a: Answers): SubmitPreScreenPayload {
             onshore: bool(a, 'candidate_onshore'),
             years_experience: num(a, 'candidate_years_experience'),
             english_overall: num(a, 'candidate_english_overall'),
-            occupation_code: str(a, 'occupation_code'),
+            occupation_code: str(a, OCCUPATION_CODE_FIELD),
             occupation_name: str(a, 'occupation_name'),
           }
         : undefined,

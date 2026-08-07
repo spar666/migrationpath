@@ -12,11 +12,11 @@ import {
   UserOversight,
   MigrationRulesPage,
   PointsConfigManager,
-  ConsultationManager,
   PolicyConfigManager,
   RegionalPostcodeManager,
   OccupationListImport,
   LeadsManager,
+  ProspectsManager,
 } from "@/components/admin";
 import { AdminGate } from "@/components/admin/AdminGate";
 import { AdminSettings } from "@/components/admin/AdminSettings";
@@ -45,8 +45,13 @@ export default function Admin() {
                 <Route path="occupation-master" element={<OccupationMaster />} />
                 <Route path="news" element={<NewsEditor />} />
                 <Route path="users" element={<UserOversight />} />
-                <Route path="consultations" element={<ConsultationManager />} />
+                {/* /admin/consultations is gone. It listed pre-session
+                    questionnaires, which the same data now reaches an agent
+                    through more usefully: per user, under User Oversight ->
+                    Consultation Intake. Old bookmarks fall through to the
+                    catch-all below and land on the overview. */}
                 <Route path="leads" element={<LeadsManager />} />
+                <Route path="prospects" element={<ProspectsManager />} />
 
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="*" element={<Navigate to="/admin" replace />} />

@@ -7,6 +7,19 @@ vi.mock('@/services/prospectStatusService', () => ({
   prospectStatusService: {
     pollUntilConfirmed: (...args: unknown[]) => pollUntilConfirmed(...args),
   },
+  // Mocking a module replaces ALL of its exports, so anything the page imports
+  // has to be listed here — a missing one is `undefined` at the call site and
+  // throws inside the very error handler it belongs to.
+  isUnknownProspect: (error: unknown) =>
+    (error as { status?: number })?.status === 404,
+}));
+
+const clearProspectSession = vi.fn();
+vi.mock('@/lib/prospectSession', async () => ({
+  ...(await vi.importActual<typeof import('@/lib/prospectSession')>(
+    '@/lib/prospectSession',
+  )),
+  clearProspectSession: () => clearProspectSession(),
 }));
 
 const ConsultConfirmed = (await import('./ConsultConfirmed')).default;
@@ -140,6 +153,42 @@ describe('when confirmation times out', () => {
       await screen.findByText(/taking a little longer than usual/i),
     ).toBeInTheDocument();
     expect(screen.queryByText(/failed|declined/i)).toBeNull();
+  });
+
+  /**
+   * A 404 is not a slow webhook, and must not be dressed up as one.
+   *
+   * The status endpoint is double-keyed, so a 404 means this id and reference
+   * are not a pair the server recognises — almost always a localStorage session
+   * that outlived the record it pointed at. Telling that visitor their booking
+   * "will confirm shortly" is false: nothing is in flight and nothing will be.
+   */
+  it('says the reference is unknown rather than pretending to wait', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    pollUntilConfirmed.mockRejectedValue(
+      Object.assign(new Error('Prospect not found'), { status: 404 }),
+    );
+
+    landOn('?prospect_id=p1&ref=MP-STALE');
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/taking a little longer than usual/i),
+      ).toBeNull(),
+    );
+  });
+
+  it('drops the dead session so it stops following them around', async () => {
+    // Otherwise the stale reference is presented on every visit for the rest
+    // of its seven-day TTL.
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    pollUntilConfirmed.mockRejectedValue(
+      Object.assign(new Error('Prospect not found'), { status: 404 }),
+    );
+
+    landOn('?prospect_id=p1&ref=MP-STALE');
+
+    await waitFor(() => expect(clearProspectSession).toHaveBeenCalled());
   });
 });
 

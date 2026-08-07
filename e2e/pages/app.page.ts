@@ -40,6 +40,14 @@ export const ROUTES: RouteUnderTest[] = [
     name: 'dashboard',
     redirectsWhenAnonymous: '/auth',
   },
+  // The admin app gates on an admin claim, so an anonymous visitor is sent to
+  // sign in rather than shown a 404. Listed here so the smoke suite notices if
+  // that gate ever stops redirecting — see admin.spec.ts for the real checks.
+  {
+    path: '/admin',
+    name: 'admin',
+    redirectsWhenAnonymous: '/auth',
+  },
   { path: '/consult/book', name: 'consult book', needsQuery: true },
   { path: '/consult/confirmed', name: 'consult confirmed', needsQuery: true },
 ];

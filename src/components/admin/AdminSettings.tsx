@@ -26,10 +26,11 @@ export function AdminSettings() {
     setPurgeResult(null);
 
     try {
-      // Call the database function to delete old rejected documents
-      const { error } = await apiClient.post("delete_old_rejected_documents");
-
-      if (error) throw error;
+      // apiClient rejects on a non-2xx, so a return here means it succeeded.
+      // The old `const { error } = ...` destructure was Supabase's convention,
+      // left behind in the move to NestJS — it read `error` off the response
+      // body, which never carries one, so a failed purge reported success.
+      await apiClient.post("delete_old_rejected_documents");
 
       setPurgeResult({
         success: true,

@@ -213,3 +213,78 @@ describe('pollUntilConfirmed', () => {
     expect(get).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * pollUntilBooked — the wait for Calendly's invitee webhook.
+ *
+ * The webhook is a server-to-server call racing the visitor's own browser.
+ * Losing that race used to surface as "choose a consultation time before
+ * paying" at checkout, told to someone who had chosen one thirty seconds
+ * earlier. These tests pin the two things that stop that: it waits, and it
+ * distinguishes "no booking" from "could not find out".
+ */
+describe('pollUntilBooked', () => {
+  it('returns as soon as a booking exists, without a second call', async () => {
+    get.mockResolvedValue(status({ booking: { id: 'b1', status: 'pending' } }));
+
+    const result = await prospectStatusService.pollUntilBooked('p1', 'MP-7F3K9A');
+
+    expect(result?.booking).toBeTruthy();
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps looking while the webhook has not landed', async () => {
+    get
+      .mockResolvedValueOnce(status({ booking: null }))
+      .mockResolvedValueOnce(status({ booking: { id: 'b1', status: 'pending' } }));
+
+    const result = await prospectStatusService.pollUntilBooked('p1', 'MP-7F3K9A', {
+      attempts: 3,
+    });
+
+    expect(result?.booking).toBeTruthy();
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives up rather than holding someone on a spinner forever', async () => {
+    get.mockResolvedValue(status({ booking: null }));
+
+    const result = await prospectStatusService.pollUntilBooked('p1', 'MP-7F3K9A', {
+      attempts: 2,
+    });
+
+    // A status WITH a null booking: we asked and found out. The page shows the
+    // "we have not got your time yet" screen on the strength of this.
+    expect(result).not.toBeNull();
+    expect(result?.booking).toBeNull();
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it('resolves null when it never got an answer at all', async () => {
+    // Not the same as "no booking". The page treats this as unknown and keeps
+    // the pay button, because the backend is the authority and hiding checkout
+    // over our own failed read is a lost sale.
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    get.mockRejectedValue(new Error('network'));
+
+    const result = await prospectStatusService.pollUntilBooked('p1', 'MP-7F3K9A', {
+      attempts: 2,
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it('stops early when the caller aborts', async () => {
+    // The page aborts on unmount. Without this, a visitor who navigates away
+    // mid-wait leaves a poll running against a rate-limited endpoint.
+    const controller = new AbortController();
+    controller.abort();
+
+    const result = await prospectStatusService.pollUntilBooked('p1', 'MP-7F3K9A', {
+      signal: controller.signal,
+    });
+
+    expect(result).toBeNull();
+    expect(get).not.toHaveBeenCalled();
+  });
+});

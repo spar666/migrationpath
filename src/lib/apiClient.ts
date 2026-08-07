@@ -127,6 +127,27 @@ function generateRequestId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+/**
+ * Pull a list out of whatever envelope an endpoint used.
+ *
+ * Responses arrive wrapped inconsistently: the API-wide TransformInterceptor
+ * adds `{ success, data }`, and a paginated endpoint adds its own
+ * `{ data, total }` inside that — so a list can sit at the top level, one deep,
+ * or two deep. Reading the wrong depth hands a caller the pagination object,
+ * and the `.map`/`.filter` that follows takes the page down.
+ *
+ * Always returns an array. A screen that renders nothing is recoverable; one
+ * that throws on an unexpected payload is not.
+ */
+export function unwrapArray<T = any>(payload: unknown): T[] {
+  if (Array.isArray(payload)) return payload as T[];
+  const p = payload as any;
+  if (Array.isArray(p?.data)) return p.data as T[];
+  if (Array.isArray(p?.data?.data)) return p.data.data as T[];
+  if (Array.isArray(p?.results)) return p.results as T[];
+  return [];
+}
+
 export default axiosInstance;
 
 function getCookieNames(): string {

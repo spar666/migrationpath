@@ -176,33 +176,51 @@ const BUSINESS_BASE: Answers = {
   email: 'grace@acme.example',
   trading_name: 'Acme',
   legal_name: 'Acme Pty Ltd',
-  years_trading: '12',
-  state: 'New South Wales',
-  sponsorship_status: 'Yes — we are an approved sponsor',
-  meets_training_obligations: 'Yes',
-  has_adverse_information: 'No',
+  business_address: '1 Acme Way, Sydney NSW',
+  years_operating_band: '4 years or more',
+  annual_revenue_band: '$1M - $5M',
+  employee_count_band: '10 - 20',
+  operates_only_in_australia: 'Yes',
+  has_temporary_visa_employees: 'No',
+  sponsored_last_5_years: 'Yes',
+  is_standard_business_sponsor: 'Yes',
+  position_title: 'Head Chef',
   occupation_name: 'Chef',
-  annual_salary: '78000',
+  occupation_code: '351311',
+  salary_band: '$80,000 - $100,000',
   work_state: 'New South Wales',
   lmt_completed: 'No',
   has_candidate: 'No — we need to find someone',
 };
 
 describe('business branch', () => {
-  it('maps sponsorship status labels to the enum the DTO expects', () => {
+  it('derives approved sponsorship status from the SBS answer', () => {
     const payload = toBusinessPayload(BUSINESS_BASE);
+    expect(payload.business?.sponsor?.is_standard_business_sponsor).toBe(true);
     expect(payload.business?.sponsor?.sponsorship_status).toBe('approved');
   });
 
-  it('maps "Not sure" sponsorship to unknown rather than dropping it', () => {
-    // Unlike the yes/no questions, "Not sure" is a real enum member here —
-    // the engine distinguishes "we asked and they did not know" from "we
-    // never asked".
+  it('derives lapsed status when a past sponsor no longer holds an SBS', () => {
     const payload = toBusinessPayload({
       ...BUSINESS_BASE,
-      sponsorship_status: 'Not sure',
+      is_standard_business_sponsor: 'No',
     });
-    expect(payload.business?.sponsor?.sponsorship_status).toBe('unknown');
+    expect(payload.business?.sponsor?.sponsorship_status).toBe('lapsed');
+  });
+
+  it('leaves sponsorship status unset when the SBS question was never asked', () => {
+    // A business that has not sponsored in five years never sees the SBS
+    // question. "We did not ask" must not be recorded as a checked answer.
+    const { is_standard_business_sponsor, ...rest } = BUSINESS_BASE;
+    void is_standard_business_sponsor;
+    const payload = toBusinessPayload({
+      ...rest,
+      sponsored_last_5_years: 'No',
+    });
+    expect(payload.business?.sponsor?.sponsorship_status).toBeUndefined();
+    expect(
+      payload.business?.sponsor?.is_standard_business_sponsor,
+    ).toBeUndefined();
   });
 
   it('keeps trading name and legal name separate', () => {
@@ -239,6 +257,56 @@ describe('business branch', () => {
     expect(payload.business?.candidate?.english_overall).toBe(6.5);
     // "Not sure" stays unknown here too.
     expect(payload.business?.candidate?.onshore).toBeUndefined();
+  });
+
+  it('keeps the position title separate from the nominated occupation', () => {
+    // The ANZSCO occupation decides eligibility; the employer's own title is
+    // what appears on the contract. Collapsing them loses one or the other.
+    const payload = toBusinessPayload(BUSINESS_BASE);
+    expect(payload.business?.nomination?.position_title).toBe('Head Chef');
+    expect(payload.business?.nomination?.occupation_name).toBe('Chef');
+    expect(payload.business?.nomination?.occupation_code).toBe('351311');
+  });
+});
+
+describe('banded answers', () => {
+  it('sends both the chosen label and its numeric floor', () => {
+    const payload = toBusinessPayload(BUSINESS_BASE);
+    const sponsor = payload.business?.sponsor;
+
+    expect(payload.business?.nomination?.salary_band).toBe('$80,000 - $100,000');
+    expect(payload.business?.nomination?.annual_salary).toBe(80_000);
+    expect(sponsor?.employee_count_band).toBe('10 - 20');
+    expect(sponsor?.employee_count).toBe(10);
+    expect(sponsor?.years_operating_band).toBe('4 years or more');
+    expect(sponsor?.years_trading).toBe(4);
+  });
+
+  it('takes the floor of a band, never the top', () => {
+    // A band straddling the income threshold must not be read optimistically —
+    // assuming the top would hand out an "eligible" the payroll may not support.
+    const payload = toBusinessPayload({
+      ...BUSINESS_BASE,
+      salary_band: '$70,000 - $80,000',
+    });
+    expect(payload.business?.nomination?.annual_salary).toBe(70_000);
+  });
+
+  it('leaves the salary unknown when the band is not a figure at all', () => {
+    const payload = toBusinessPayload({
+      ...BUSINESS_BASE,
+      candidate_current_pay_band: "I don't know",
+      has_candidate: 'Yes',
+    });
+    // "I don't know" is recorded verbatim but must not become a confident zero.
+    expect(payload.business?.nomination?.candidate_current_pay_band).toBe(
+      "I don't know",
+    );
+  });
+
+  it('carries revenue as a label only — there is no numeric field for it', () => {
+    const payload = toBusinessPayload(BUSINESS_BASE);
+    expect(payload.business?.sponsor?.annual_revenue_band).toBe('$1M - $5M');
   });
 });
 
