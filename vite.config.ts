@@ -104,10 +104,27 @@ export default defineConfig(({ mode }) => {
             if (inPackage('@radix-ui')) return 'ui';
             if (inPackage('recharts') || inPackage('d3-')) return 'charts';
             if (inPackage('framer-motion')) return 'motion';
+            // ONLY the React runtime core belongs here. Every package in this
+            // chunk must be a dependency *leaf* — nothing it imports may land
+            // in another manual chunk.
+            //
+            // react-router used to be in this list, and that was the bug.
+            // react-router-dom depends on @remix-run/router, which has no rule
+            // of its own and so fell through to `vendor`. That made `react`
+            // import `vendor` while `vendor` (lucide-react, react-hook-form,
+            // @tanstack/react-query, sonner, vaul...) imports `react` — a
+            // cycle. The browser has to pick one side to evaluate first, it
+            // picked `vendor`, and `vendor` reached for React.forwardRef
+            // before the react chunk had initialised its exports. Hence
+            // "Cannot read properties of undefined (reading 'forwardRef')".
+            //
+            // react, react-dom and scheduler only depend on each other, so
+            // this chunk is now a true leaf and the cycle cannot re-form.
+            // react-router falls through to `vendor`, which already imports
+            // react — a one-way edge.
             if (
               inPackage('react/') ||
               inPackage('react-dom') ||
-              inPackage('react-router') ||
               inPackage('scheduler')
             ) {
               return 'react';
