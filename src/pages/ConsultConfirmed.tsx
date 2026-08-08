@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CalendarCheck, Clock, Loader2, Mail, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,16 @@ import {
 
 type View = 'checking' | 'confirmed' | 'pending' | 'unknown';
 
+/**
+ * How long the confirmed state stays on screen before we send people home.
+ *
+ * Long enough to read the slot and reach for the join link, short enough that
+ * the page does not feel like a dead end. The countdown is visible and there is
+ * a way to leave immediately — a redirect that fires without warning reads as a
+ * bug, not as a courtesy.
+ */
+const REDIRECT_SECONDS = 8;
+
 function formatSlot(iso: string | null): string | null {
   if (!iso) return null;
   const date = new Date(iso);
@@ -48,8 +58,11 @@ export default function ConsultConfirmed() {
     [],
   );
 
+  const navigate = useNavigate();
+
   const [view, setView] = useState<View>('checking');
   const [status, setStatus] = useState<ProspectStatus | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(REDIRECT_SECONDS);
 
   useEffect(() => {
     document.title = 'Your consultation | MigrationPath';
@@ -104,6 +117,30 @@ export default function ConsultConfirmed() {
 
     return () => controller.abort();
   }, [prospectId, humanRef]);
+
+  /**
+   * Send them back to the landing page once the booking is genuinely confirmed.
+   *
+   * Only on 'confirmed' — the pending and unknown branches are exactly the
+   * screens someone needs to sit with and read, and navigating away from
+   * "contact us and quote your reference" would take the reference with it.
+   */
+  useEffect(() => {
+    if (view !== 'confirmed') return;
+
+    const tick = window.setInterval(() => {
+      setSecondsLeft((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+
+    const timer = window.setTimeout(() => {
+      navigate('/', { replace: true });
+    }, REDIRECT_SECONDS * 1000);
+
+    return () => {
+      window.clearInterval(tick);
+      window.clearTimeout(timer);
+    };
+  }, [view, navigate]);
 
   const slot = formatSlot(status?.booking?.scheduled_at ?? null);
 
@@ -181,7 +218,25 @@ export default function ConsultConfirmed() {
                     </a>
                   </Button>
                 )}
+
+                <Button
+                  variant="ghost"
+                  className="h-11 w-full"
+                  onClick={() => navigate('/', { replace: true })}
+                >
+                  Back to home
+                  {secondsLeft > 0 && (
+                    <span className="ml-2 text-navy-muted">
+                      ({secondsLeft})
+                    </span>
+                  )}
+                </Button>
               </div>
+
+              <p className="mt-3 text-center text-sm text-navy-muted">
+                Taking you back to the homepage
+                {secondsLeft > 0 ? ` in ${secondsLeft}s` : ''}…
+              </p>
             </>
           )}
 

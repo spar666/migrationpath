@@ -14,6 +14,14 @@ vi.mock('@/services/prospectStatusService', () => ({
     (error as { status?: number })?.status === 404,
 }));
 
+const navigate = vi.fn();
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual<typeof import('react-router-dom')>(
+    'react-router-dom',
+  )),
+  useNavigate: () => navigate,
+}));
+
 const clearProspectSession = vi.fn();
 vi.mock('@/lib/prospectSession', async () => ({
   ...(await vi.importActual<typeof import('@/lib/prospectSession')>(
@@ -58,6 +66,7 @@ function status(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   pollUntilConfirmed.mockReset();
+  navigate.mockReset();
 });
 
 describe('on arrival', () => {
@@ -214,5 +223,44 @@ describe('the reference', () => {
     pollUntilConfirmed.mockResolvedValue(status());
     landOn('?prospect_id=p1&ref=MP-7F3K9A');
     expect(await screen.findByText('MP-7F3K9A')).toBeInTheDocument();
+  });
+});
+
+describe('returning to the landing page', () => {
+  it('sends a confirmed booking home, but not instantly', async () => {
+    // The delay is the point. Redirecting the moment the webhook lands would
+    // yank the slot, the join link and the reference off the screen before
+    // anyone could read them.
+    pollUntilConfirmed.mockResolvedValue(
+      status({
+        booking: {
+          id: 'b1',
+          status: 'confirmed',
+          scheduled_at: '2026-08-01T02:00:00.000Z',
+          join_url: 'https://meet.example/abc',
+          reschedule_url: null,
+        },
+      }),
+    );
+
+    landOn('?prospect_id=p1&ref=MP-7F3K9A');
+    await screen.findByText(/you’re booked in/i);
+    expect(navigate).not.toHaveBeenCalled();
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }), {
+      timeout: 12_000,
+    });
+  }, 15_000);
+
+  it('leaves an unconfirmed visitor where they are', async () => {
+    // 'pending' is the screen that says "contact us and quote your reference".
+    // Navigating away from it would take the reference with it.
+    pollUntilConfirmed.mockResolvedValue(status({ consult_confirmed: false }));
+
+    landOn('?prospect_id=p1&ref=MP-7F3K9A');
+    await screen.findByText(/taking a little longer than usual/i);
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(navigate).not.toHaveBeenCalled();
   });
 });
