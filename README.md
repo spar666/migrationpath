@@ -1,73 +1,84 @@
-# Welcome to your Lovable project
+# MigrationPath — web client
 
-## Project info
+React single-page app for the MigrationPath migration-advisory product: the
+public marketing site, the eligibility and points tools, the consult booking
+funnel, and the admin console.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+It has no database of its own. Everything comes from the Nest API in the
+`migrationpath-backend` repo, addressed through `VITE_API_BASE_URL`.
 
-## How can I edit this code?
+## Stack
 
-There are several ways of editing your application.
+Vite · React 18 · TypeScript · Tailwind + shadcn/ui · React Router · TanStack
+Query · Vitest (unit) · Playwright (E2E).
 
-**Use Lovable**
+## Getting started
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm ci
+cp .env.example .env
+npm run dev          # http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+`npm run dev` proxies `/api` to `http://localhost:3000`, so a backend running
+locally on its default port needs no extra configuration.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Scripts
 
-**Use GitHub Codespaces**
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server with HMR on port 8080 |
+| `npm run build` | Typecheck, then production bundle into `dist/` |
+| `npm run preview` | Serve the built bundle |
+| `npm run typecheck` | `tsc -b --force`, no emit |
+| `npm run lint` | ESLint over the repo |
+| `npm test` | Vitest, single run |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run test:e2e` | Playwright; starts its own dev server |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Environment
 
-## What technologies are used for this project?
+`.env.example` is the reference. `VITE_API_BASE_URL` is the only required
+variable; the rest have working defaults.
 
-This project is built with:
+| Variable | Purpose |
+| --- | --- |
+| `VITE_API_BASE_URL` | Backend origin, including the `/api/v1` prefix |
+| `VITE_CALENDLY_CONSULT_URL` | Calendly event the consult is booked against. `lib/booking.ts` appends the prospect id as `utm_content`, which is how the Calendly webhook links a booking back to its prospect — the funnel breaks silently without it |
+| `VITE_API_DEBUG` | Logs every request and response |
+| `VITE_REQUEST_TIMEOUT`, `VITE_MAX_RETRIES` | API client tuning |
+| `VITE_ENABLE_ANALYTICS`, `VITE_ENABLE_LOGGING` | Feature flags |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+`.env.staging` and `.env.production` hold the deployed values.
 
-## How can I deploy this project?
+## Layout
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```
+src/
+  components/   Feature-grouped UI; components/ui is shadcn primitives
+  pages/        One file per route, wired up in App.tsx
+  services/     API calls, one module per backend resource
+  hooks/        Data-fetching and stateful UI hooks
+  lib/          Framework-free helpers (api client, booking, security)
+  contexts/     React context providers
+  types/        Shared TypeScript types
+e2e/            Playwright specs and page objects
+docs/           Longer-form notes
+```
 
-## Can I connect a custom domain to my Lovable project?
+## Testing
 
-Yes, you can!
+Unit and component tests sit next to the code they cover and run in jsdom.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Three of them — `e2eSelectors`, `consultSelectors` and `toolSelectors` — are
+selector contracts rather than ordinary component tests. They assert the exact
+strings the Playwright page objects address the UI by, so a renamed label fails
+in under a second with the string in the message, instead of failing twenty
+minutes later in the browser suite as a locator timeout. If one goes red, fix
+the page object in `e2e/pages/` too; they are the same strings.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Deployment
+
+Vercel, from `dist/`. `vercel.json` rewrites all paths to `index.html` so
+client-side routing survives a hard refresh. CI (`.github/workflows/ci.yml`)
+runs lint, typecheck, tests and a build on every push and pull request.

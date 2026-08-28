@@ -8,10 +8,16 @@ import { VisaEligibilityCard } from "./VisaEligibilityCard";
 interface OccupationSearchToolProps {
   className?: string;
   onSelectOccupation?: (occupation: OccupationSearchResult) => void;
+  /** Seeds the box so a search started elsewhere (the mobile overlay) survives the navigation. */
+  initialQuery?: string;
 }
 
-export function OccupationSearchTool({ className, onSelectOccupation }: OccupationSearchToolProps) {
-  const [query, setQuery] = useState("");
+export function OccupationSearchTool({
+  className,
+  onSelectOccupation,
+  initialQuery = "",
+}: OccupationSearchToolProps) {
+  const [query, setQuery] = useState(initialQuery);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [selectedOccupation, setSelectedOccupation] = useState<OccupationSearchResult | null>(null);

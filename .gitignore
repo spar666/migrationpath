@@ -31,6 +31,17 @@ dist-ssr
 # Package manager lockfiles (keep only package-lock.json)
 bun.lockb
 yarn.lock
+.yarn/
+.yarnrc.yml
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Editor and coding-agent scratch directories
+.claude/
+.continue/
+.lovable/
+.antigravitycli/
 
 # Test output. Playwright rewrites both on every run; test-results/ holds the
 # screenshots and videos of the last failures, which are worth reading and not

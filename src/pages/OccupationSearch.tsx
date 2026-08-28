@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/common/navbar/Header";
 import { Footer } from "@/components/common/footer/Footer";
 import { MobileBottomNav } from "@/components/common/navbar/MobileBottomNav";
@@ -8,6 +9,7 @@ import { Search } from "lucide-react";
 import { statsService } from "@/services/statsService";
 
 export default function OccupationSearch() {
+  const [searchParams] = useSearchParams();
   const [stats, setStats] = useState({
     courses: "500+",
     occupations: "200+",
@@ -57,7 +59,7 @@ export default function OccupationSearch() {
             </div>
 
             {/* Search Tool */}
-            <OccupationSearchTool />
+            <OccupationSearchTool initialQuery={searchParams.get("q") ?? ""} />
 
             {/* Quick Stats */}
             <div className="mt-12 flex flex-wrap items-center justify-center gap-10 text-sm text-muted-foreground">
