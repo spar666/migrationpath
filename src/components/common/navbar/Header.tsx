@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Search, Calculator, FileText, ChevronDown, Briefcase, Heart, Building2, Home, Newspaper, Sparkles } from "lucide-react";
+import { Menu, X, Search, Calculator, ChevronDown, Briefcase, Heart, Building2, Home, Newspaper, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
@@ -20,12 +20,19 @@ const navLinks = [
 	{ label: "Points Calculator", href: "/points-calculator", icon: Calculator },
 	{ label: "Occupation Search", href: "/occupation-search", icon: Search },
 	{ label: "Migration News", href: "/news", icon: Newspaper },
-	// Replaces "Get Quote", which opened a slide-over asking for a name and a
-	// visa subclass in order to quote a price. /get-started asks the one
-	// question that changes what happens next and hands over to the funnel
-	// that matches the answer.
-	{ label: "Get Started", href: "/get-started", icon: FileText },
 ];
+
+/**
+ * Not in navLinks, and deliberately so.
+ *
+ * This replaces "Get Quote", which opened a slide-over asking for a name and a
+ * visa subclass in order to quote a price. /get-started asks the one question
+ * that changes what happens next and hands over to the funnel that matches the
+ * answer — so it is the only thing in the bar we actually want clicked, and it
+ * is pinned right as a solid button rather than sitting fourth in a row of
+ * identical grey links.
+ */
+const GET_STARTED_HREF = "/get-started";
 
 const pathwayCategories = [
 	{
@@ -222,15 +229,17 @@ export function Header() {
 
 					{/* Desktop Right Actions */}
 					<motion.div variants={itemVariants} className="hidden items-center gap-3 md:flex">
+						{/* A second search control stood here: an icon button with
+						    no onClick and no handler behind it. Two entry points
+						    for one search was already a coin toss for the visitor;
+						    one of them being inert made it a dead end. "Occupation
+						    Search" in the bar is the single way in. */}
 						{!isAdminPage && (
-							<Button
-								variant="ghost"
-								size="icon"
-								className="relative h-10 w-10 rounded-lg text-white/50 hover:text-white hover:bg-white/[0.08] transition-all duration-300"
-							>
-								<Search className="h-4 w-4" />
-								<span className="sr-only">Search</span>
-							</Button>
+							<Link to={GET_STARTED_HREF}>
+								<Button className="btn-gold h-10 px-5 font-semibold">
+									Get Started
+								</Button>
+							</Link>
 						)}
 
 						{/* No public sign-in. The avatar menu is the admin's way
@@ -270,6 +279,18 @@ export function Header() {
 									</div>
 
 									<nav className="flex flex-col gap-1 p-4">
+										{/* Mirrors the desktop bar. Get Started is no
+										    longer in navLinks, so without this it would
+										    vanish from the menu on the widths where it
+										    matters most. */}
+										{!isAdminPage && (
+											<Link to={GET_STARTED_HREF} onClick={() => setIsOpen(false)}>
+												<Button className="btn-gold mb-3 h-11 w-full font-semibold">
+													Get Started
+												</Button>
+											</Link>
+										)}
+
 										<Link
 											to="/"
 											onClick={() => setIsOpen(false)}
