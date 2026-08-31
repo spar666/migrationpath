@@ -8,7 +8,6 @@ import {
   NewsEditor,
   OccupationMaster,
   UserOversight,
-  MigrationRulesPage,
   PointsConfigManager,
   PolicyConfigManager,
   OccupationListImport,
@@ -31,7 +30,6 @@ export default function Admin() {
                 <Route index element={<AdminOverview />} />
                 <Route path="site-config" element={<SiteConfigEditor />} />
                 <Route path="form-logic" element={<FormLogicEditor />} />
-                <Route path="migration-rules" element={<MigrationRulesPage />} />
                 <Route path="points-config" element={<PointsConfigManager />} />
                 <Route path="policy-config" element={<PolicyConfigManager />} />
                 {/* /admin/regional-postcodes is gone. It maintained postcode

@@ -27,7 +27,6 @@ const menuItems = [
   { title: "Prospects", icon: ClipboardCheck, path: "/admin/prospects" },
   { title: "Site Configuration", icon: Settings, path: "/admin/site-config" },
   { title: "Form Logic", icon: ListChecks, path: "/admin/form-logic" },
-  { title: "Invite Trends", icon: Scale, path: "/admin/migration-rules" },
   { title: "Points Configuration", icon: Calculator, path: "/admin/points-config" },
   { title: "Legislative Settings", icon: Scale, path: "/admin/policy-config" },
   { title: "Occupations", icon: Briefcase, path: "/admin/occupation-master" },

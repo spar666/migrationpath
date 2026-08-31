@@ -7,9 +7,7 @@ export { NewsEditor } from "./NewsEditor";
 export { OccupationMaster } from "./OccupationMaster";
 export { AdminGate } from "./AdminGate";
 export { AdminSettings } from "./AdminSettings";
-export { MigrationRulesPage } from "./MigrationRulesPage";
 
-export { InviteTrendsManager } from "./InviteTrendsManager";
 export { PointsConfigManager } from "./PointsConfigManager";
 export { ConsultationIntakeTab } from "./ConsultationIntakeTab";
 export { LeadsManager } from "./LeadsManager";
