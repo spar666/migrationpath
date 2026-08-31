@@ -44,9 +44,11 @@ const initialCategories: FormCategory[] = [
   {
     id: "visas",
     name: "Visa Types",
-    description: "Available visa options for the Onshore Strategy Audit",
+    description: "Current-visa options offered in the funnel forms",
     options: [
-      { id: "v1", value: "482", label: "482 - Temporary Skill Shortage", order: 1 },
+      // Renamed Skills in Demand in December 2024. "Temporary Skill Shortage"
+      // is the old name and reads as a different, older program.
+      { id: "v1", value: "482", label: "482 - Skills in Demand", order: 1 },
       { id: "v2", value: "485", label: "485 - Temporary Graduate", order: 2 },
       { id: "v3", value: "sid", label: "Skills in Demand (SID) - 2026", order: 3 },
       { id: "v4", value: "407", label: "407 - Training Visa", order: 4 },
@@ -56,7 +58,7 @@ const initialCategories: FormCategory[] = [
   {
     id: "occupations",
     name: "Occupation List",
-    description: "Occupations displayed in the audit form dropdown",
+    description: "Occupations displayed in the funnel form dropdowns",
     options: [
       { id: "o1", value: "software-engineer", label: "Software Engineer", order: 1 },
       { id: "o2", value: "civil-engineer", label: "Civil Engineer", order: 2 },
@@ -161,7 +163,7 @@ export function FormLogicEditor() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Form Logic Editor</h1>
         <p className="text-muted-foreground">
-          Manage dropdown options for the Onshore Strategy Audit and other forms
+          Manage dropdown options for the funnel forms
         </p>
       </div>
 

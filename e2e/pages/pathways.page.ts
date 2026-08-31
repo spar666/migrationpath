@@ -9,12 +9,12 @@ import type { Page } from '@playwright/test';
  * marketing edit can break silently:
  *
  *   - the page renders its own hero rather than a blank shell
- *   - the signup CTA carries the right `persona` query parameter, because that
- *     is what routes the new account into the right funnel
+ *   - the primary CTA reaches the pre-screen, the site's one front door
  *   - the secondary CTA points at the tool this audience actually needs
  *
- * A persona typo is invisible on the page and changes where every signup from
- * that page lands. That is the failure this file exists to catch.
+ * These pages are near-identical and get copy-pasted from each other, so a
+ * secondary CTA pointing at another audience's tool is invisible on the page
+ * and wrong for everyone who clicks it. That is the failure this file catches.
  */
 
 export interface PathwayUnderTest {
@@ -22,47 +22,28 @@ export interface PathwayUnderTest {
   name: string;
   /** Distinctive words from the h1. Matched loosely — it spans two lines. */
   heading: RegExp;
-  /** The `persona` query param the signup CTA must carry. */
-  persona: string;
   /** Where the secondary CTA goes. */
   secondaryCta: string;
 }
 
 export const PATHWAYS: PathwayUnderTest[] = [
   {
-    path: '/pathways/student',
-    name: 'student',
-    heading: /student to pr/i,
-    persona: 'student',
-    secondaryCta: '/points-calculator',
-  },
-  {
     path: '/pathways/skilled',
     name: 'skilled',
     heading: /direct pr route/i,
-    persona: 'skilled',
     secondaryCta: '/points-calculator',
   },
   {
     path: '/pathways/partner',
     name: 'partner',
     heading: /join your partner/i,
-    persona: 'partner',
-    secondaryCta: '/quote',
-  },
-  {
-    path: '/pathways/onshore',
-    name: 'onshore',
-    heading: /maximize your pr chances/i,
-    persona: 'onshore-skilled',
-    secondaryCta: '/points-calculator',
+    secondaryCta: '/partner-audit',
   },
   {
     path: '/pathways/employer',
     name: 'employer',
     heading: /australian employer/i,
-    persona: 'employer',
-    secondaryCta: '/quote',
+    secondaryCta: '/occupation-search',
   },
 ];
 
@@ -78,19 +59,19 @@ export class PathwayPage {
   }
 
   /**
-   * Every signup link on the page.
+   * Every primary CTA on the page.
    *
    * Plural deliberately: these pages repeat the CTA at the top and bottom, and
-   * a spec that checked only the first would miss a footer CTA carrying the
-   * wrong persona — which is exactly the kind of thing that gets copy-pasted
-   * from another pathway page and never noticed.
+   * a spec that checked only the first would miss a footer CTA pointing
+   * somewhere else — exactly the kind of thing that gets copy-pasted from
+   * another pathway page and never noticed.
+   *
+   * These used to be persona-tagged sign-up links. There are no accounts to
+   * sign up for now, so every pathway page sends its visitor into the same
+   * pre-screen and the persona travels in their answers instead of the URL.
    */
-  signupLinks() {
-    return this.page.locator('a[href*="/auth?intent=signup"]');
-  }
-
-  signupLinksFor(persona: string) {
-    return this.page.locator(`a[href*="persona=${persona}"]`);
+  primaryCtaLinks() {
+    return this.page.locator('a[href="/pre-screen"]');
   }
 
   secondaryLinks(href: string) {

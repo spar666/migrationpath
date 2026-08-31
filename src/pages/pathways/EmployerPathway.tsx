@@ -83,16 +83,16 @@ export default function EmployerPathway() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/auth?intent=signup&persona=employer">
+                <Link to="/pre-screen">
                   <Button className="btn-gold h-auto min-h-12 whitespace-normal px-6 sm:px-8 text-base">
-                    Secure Your Pathway & Open Dashboard
+                    Check Your Eligibility
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/quote">
+                <Link to="/occupation-search">
                   <Button variant="outline" className="h-12 px-8 border-white/30 text-white bg-white/5 hover:bg-white/10">
                     <FileText className="w-4 h-4 mr-2" />
-                    Get Fee Estimate
+                    Check Your Occupation
                   </Button>
                 </Link>
               </div>
@@ -200,23 +200,23 @@ export default function EmployerPathway() {
                   </div>
                   <div>
                     <p className="text-sm text-white/70">Ready to Track?</p>
-                    <p className="font-semibold">Create Your Free Account</p>
+                    <p className="font-semibold">Free Eligibility Check</p>
                   </div>
                 </div>
                 
                 <p className="text-white/80 mb-6">
-                  Monitor your nomination status, track your 186 eligibility countdown, and manage your mobility window.
+                  Answer a few questions about your role and sponsor and we'll tell you where you stand on nomination and the 186 pathway.
                 </p>
                 
-                <Link to="/auth?intent=signup&persona=employer">
+                <Link to="/pre-screen">
                   <Button className="btn-gold w-full h-auto min-h-12 whitespace-normal text-base">
-                    Secure Your Pathway & Open Dashboard
+                    Check Your Eligibility
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
                 
                 <p className="text-xs text-white/50 mt-4 text-center">
-                  Free forever. No credit card required.
+                  Takes about two minutes. No account needed.
                 </p>
               </Card>
             </div>

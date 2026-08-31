@@ -118,22 +118,24 @@ test.describe('the app shell', () => {
   });
 });
 
-test.describe('authenticated routes', () => {
-  test('sends an anonymous visitor away from the dashboard', async ({ page }) => {
+test.describe('the admin gate', () => {
+  test('sends an anonymous visitor to the admin sign-in', async ({ page }) => {
+    // The public site has no accounts and no /dashboard any more, so /admin is
+    // the only gated route left — and /admin/login is the only way through it.
     await stubApi(page);
 
-    await page.goto('/dashboard');
+    await page.goto('/admin');
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/auth/);
+    await expect(page).toHaveURL(/\/admin\/login/);
   });
 
-  test('lets a signed-in visitor reach it', async ({ page }) => {
-    await stubApi(page, { authenticated: true });
+  test('lets a signed-in admin reach it', async ({ page }) => {
+    await stubApi(page, { admin: true });
 
-    await page.goto('/dashboard');
+    await page.goto('/admin');
     await waitForApp(page);
 
-    await expect(page).not.toHaveURL(/\/auth/);
+    await expect(page).not.toHaveURL(/\/admin\/login/);
   });
 });

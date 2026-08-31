@@ -24,10 +24,8 @@ export interface FooterConfig {
 
 export interface SiteConfigData {
   home: HomePageConfig;
-  student: PageConfig;
   skilled: PageConfig;
   partner: PageConfig;
-  onshore: PageConfig;
   footer: FooterConfig;
 }
 

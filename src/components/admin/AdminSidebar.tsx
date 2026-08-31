@@ -12,11 +12,9 @@ import {
   GraduationCap,
   Calculator,
   ListChecks,
-  TrendingUp,
   Scale,
   Inbox,
   ClipboardCheck,
-  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,13 +27,10 @@ const menuItems = [
   { title: "Prospects", icon: ClipboardCheck, path: "/admin/prospects" },
   { title: "Site Configuration", icon: Settings, path: "/admin/site-config" },
   { title: "Form Logic", icon: ListChecks, path: "/admin/form-logic" },
-  { title: "Migration Rules", icon: Scale, path: "/admin/migration-rules" },
+  { title: "Invite Trends", icon: Scale, path: "/admin/migration-rules" },
   { title: "Points Configuration", icon: Calculator, path: "/admin/points-config" },
   { title: "Legislative Settings", icon: Scale, path: "/admin/policy-config" },
-  { title: "Course Manager", icon: GraduationCap, path: "/admin/courses" },
-  { title: "Live Invitations", icon: TrendingUp, path: "/admin/invitations" },
   { title: "Occupations", icon: Briefcase, path: "/admin/occupation-master" },
-  { title: "Regional Postcodes", icon: MapPin, path: "/admin/regional-postcodes" },
   { title: "Occupation Lists", icon: ListChecks, path: "/admin/occupation-lists" },
   { title: "User Oversight", icon: Users, path: "/admin/users" },
   { title: "Settings", icon: Settings, path: "/admin/settings" },

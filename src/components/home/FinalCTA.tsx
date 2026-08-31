@@ -71,8 +71,8 @@ export function FinalCTA() {
 
           {/* Subtitle */}
           <p className="text-lg md:text-xl text-glacier-light/80 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Get a comprehensive migration audit from our MARA-registered agents. 
-            Discover your fastest pathway to Australian permanent residency.
+            Tell us which situation applies to you and we'll take you straight to the right
+            assessment — reviewed by our MARA-registered agents.
           </p>
 
           {/* Benefits Grid */}
@@ -103,9 +103,9 @@ export function FinalCTA() {
               variant="gold"
               size="xl"
               className="gap-3 max-w-full whitespace-normal h-auto py-4 text-base px-6 sm:text-lg sm:px-12 shadow-gold-glow hover:shadow-lg transition-all duration-300 hover:scale-105"
-              onClick={() => navigate("/quote")}
+              onClick={() => navigate("/get-started")}
             >
-              Get My Free Migration Audit
+              Get Started
               <ArrowRight className="h-5 w-5" />
             </Button>
           </motion.div>

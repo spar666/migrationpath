@@ -15,13 +15,14 @@ const { authService } = await import('./authService');
 /**
  * Token persistence.
  *
- * The backend signs `access_token` on signin, signup AND refresh. Whether the
- * client stores it decides whether the user is logged in — and when it silently
- * fails, nothing throws. The request just goes out unauthenticated later, and
- * the user is bounced to the login screen with no explanation.
+ * Sign-in is the only entry point left — signup, password reset and refresh
+ * went with the user accounts, and the service is now staff-only. Whether the
+ * client stores the token decides whether the admin is signed in, and when it
+ * silently fails nothing throws: the next request goes out unauthenticated and
+ * the admin is bounced to /admin/login with no explanation.
  *
- * So each entry point gets the same assertion: the token the server issued is
- * the token we keep.
+ * Hence the assertion below, repeated across every spelling the backend has
+ * ever used for the field: the token the server issued is the token we keep.
  */
 
 beforeEach(() => {
@@ -63,73 +64,14 @@ describe('login', () => {
   });
 });
 
-describe('register', () => {
-  it('stores the access_token the backend issues', async () => {
-    // The backend's signUp returns { user, access_token } — the same shape as
-    // signin. A client that only reads `res.token` throws away a perfectly
-    // good session and the user appears logged out the moment they sign up.
-    post.mockResolvedValue({ access_token: 'jwt-signup', user: { id: 'u1' } });
-
-    await authService.register({
-      email: 'a@b.com',
-      password: 'x',
-      fullName: 'A B',
-    } as never);
-
-    expect(authService.getToken()).toBe('jwt-signup');
-  });
-
-  it('accepts the same token field names as login', async () => {
-    post.mockResolvedValue({ accessToken: 'jwt-signup' });
-    await authService.register({
-      email: 'a@b.com',
-      password: 'x',
-      fullName: 'A B',
-    } as never);
-    expect(authService.getToken()).toBe('jwt-signup');
-  });
-});
-
-describe('refreshToken', () => {
-  it('stores the refreshed access_token', async () => {
-    // The failure here is the nastiest of the three: refresh "succeeds", the
-    // new token is dropped, the next call goes out with the expired one, and
-    // the user is signed out mid-session for no visible reason.
-    localStorage.setItem('refresh_token', 'refresh-abc');
-    post.mockResolvedValue({ access_token: 'jwt-refreshed', user: { id: 'u1' } });
-
-    await authService.refreshToken();
-
-    expect(authService.getToken()).toBe('jwt-refreshed');
-  });
-
-  it('refuses without a stored refresh token', async () => {
-    await expect(authService.refreshToken()).rejects.toMatchObject({
-      status: 401,
-    });
-    expect(post).not.toHaveBeenCalled();
-  });
-
-  it('logs out when the refresh is rejected', async () => {
-    localStorage.setItem('auth_token', 'stale');
-    localStorage.setItem('refresh_token', 'refresh-abc');
-    post.mockRejectedValue(new Error('invalid refresh'));
-
-    await expect(authService.refreshToken()).rejects.toThrow();
-    expect(authService.getToken()).toBeNull();
-  });
-});
-
 describe('logout', () => {
-  it('clears both tokens', async () => {
+  it('clears the stored token', async () => {
     localStorage.setItem('auth_token', 'jwt');
-    localStorage.setItem('refresh_token', 'refresh');
     post.mockResolvedValue({});
 
     authService.logout();
 
     expect(authService.getToken()).toBeNull();
-    expect(localStorage.getItem('refresh_token')).toBeNull();
   });
 
   it('clears local state even when the server call fails', async () => {

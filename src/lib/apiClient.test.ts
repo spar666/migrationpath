@@ -271,7 +271,7 @@ describe('error mapping', () => {
 });
 
 describe('401 handling', () => {
-  it('clears the stored token and redirects to /auth', async () => {
+  it('clears the stored token and redirects to the admin sign-in', async () => {
     localStorage.setItem('auth_token', 'tok');
     const { apiClient } = await loadClient();
     adapter.mockImplementation(httpError(401));
@@ -281,18 +281,19 @@ describe('401 handling', () => {
       status: 401,
     });
     expect(localStorage.getItem('auth_token')).toBeNull();
-    expect(hrefSetter).toHaveBeenCalledWith('/auth');
+    // /admin/login, not /auth: staff are the only people who hold a token now.
+    expect(hrefSetter).toHaveBeenCalledWith('/admin/login');
   });
 
   it('does not redirect while the auth flow has suppression on', async () => {
-    // A wrong password returns 401. Redirecting on it would bounce the user
-    // off the login page mid-login and lose the error message.
+    // A wrong password returns 401. Redirecting on it would bounce the admin
+    // off the sign-in page mid-login and lose the error message.
     localStorage.setItem('auth_token', 'tok');
     const { apiClient, setSuppressAuthRedirect } = await loadClient();
     setSuppressAuthRedirect(true);
     adapter.mockImplementation(httpError(401));
 
-    await expect(apiClient.post('/auth/login', {})).rejects.toMatchObject({
+    await expect(apiClient.post('/auth/signin', {})).rejects.toMatchObject({
       code: 'SESSION_EXPIRED',
     });
     expect(hrefSetter).not.toHaveBeenCalled();
@@ -304,7 +305,7 @@ describe('401 handling', () => {
     setSuppressAuthRedirect(true);
     adapter.mockImplementation(httpError(401));
 
-    await expect(apiClient.post('/auth/login', {})).rejects.toThrow();
+    await expect(apiClient.post('/auth/signin', {})).rejects.toThrow();
     expect(localStorage.getItem('auth_token')).toBe('tok');
   });
 
@@ -313,7 +314,7 @@ describe('401 handling', () => {
     setSuppressAuthRedirect(true);
     adapter.mockImplementation(httpError(401));
 
-    await expect(apiClient.post('/auth/login', {})).rejects.toMatchObject({
+    await expect(apiClient.post('/auth/signin', {})).rejects.toMatchObject({
       status: 401,
     });
   });
@@ -325,7 +326,7 @@ describe('401 handling', () => {
     adapter.mockImplementation(httpError(401));
 
     await expect(apiClient.get('/thing')).rejects.toThrow();
-    expect(hrefSetter).toHaveBeenCalledWith('/auth');
+    expect(hrefSetter).toHaveBeenCalledWith('/admin/login');
   });
 });
 

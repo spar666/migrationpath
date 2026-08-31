@@ -51,6 +51,10 @@ const evidencePillars = [
 ];
 
 const keyBenefits = [
+  // "Apply from inside Australia" carries the onshore point that used to live
+  // on /pathways/onshore: for partner visas, being here is the difference
+  // between the 820/801 stream and the 309/100 one, not a separate product.
+  "Apply onshore (820/801) or offshore (309/100)",
   "Live and work in Australia with your partner",
   "No points test required",
   "Access to Medicare from Stage 1",
@@ -91,16 +95,16 @@ export default function PartnerPathway() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/auth?intent=signup&persona=partner">
+                <Link to="/pre-screen">
                   <Button className="btn-gold h-auto min-h-12 whitespace-normal px-6 sm:px-8 text-base">
-                    Secure Your Pathway & Open Dashboard
+                    Check Your Eligibility
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/quote">
+                <Link to="/partner-audit">
                   <Button variant="outline" className="h-12 px-8 border-white/30 text-white bg-white/5 hover:bg-white/10">
                     <FileText className="w-4 h-4 mr-2" />
-                    Get Fee Estimate
+                    Check Your Eligibility
                   </Button>
                 </Link>
               </div>
@@ -199,23 +203,23 @@ export default function PartnerPathway() {
                   </div>
                   <div>
                     <p className="text-sm text-white/70">Ready to Start?</p>
-                    <p className="font-semibold">Create Your Free Account</p>
+                    <p className="font-semibold">Free Eligibility Check</p>
                   </div>
                 </div>
                 
                 <p className="text-white/80 mb-6">
-                  Track your evidence collection, monitor visa processing times, and receive updates on your application status.
+                  Answer a few questions about your relationship and we'll tell you which partner visa fits and what evidence you'll need to gather.
                 </p>
                 
-                <Link to="/auth?intent=signup&persona=partner">
+                <Link to="/pre-screen">
                   <Button className="btn-gold w-full h-auto min-h-12 whitespace-normal text-base">
-                    Secure Your Pathway & Open Dashboard
+                    Check Your Eligibility
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
                 
                 <p className="text-xs text-white/50 mt-4 text-center">
-                  Free forever. No credit card required.
+                  Takes about two minutes. No account needed.
                 </p>
               </Card>
             </div>

@@ -1,1 +1,0 @@
-export { AuthGateOverlay } from "./AuthGateOverlay";

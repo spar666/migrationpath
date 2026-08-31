@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Search, Calculator, LayoutDashboard, FileText, ChevronDown, GraduationCap, Briefcase, Heart, Building2, UserCheck, Home, Newspaper, Sparkles } from "lucide-react";
+import { Menu, X, Search, Calculator, FileText, ChevronDown, Briefcase, Heart, Building2, Home, Newspaper, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
@@ -12,36 +12,27 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { QuoteSlideOver } from "@/components/quote/QuoteSlideOver";
 import { UserMenu } from "@/components/common/navbar/UserMenu";
 import { authService } from "@/services/authService";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-	{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
 	{ label: "Points Calculator", href: "/points-calculator", icon: Calculator },
 	{ label: "Occupation Search", href: "/occupation-search", icon: Search },
 	{ label: "Migration News", href: "/news", icon: Newspaper },
+	// Replaces "Get Quote", which opened a slide-over asking for a name and a
+	// visa subclass in order to quote a price. /get-started asks the one
+	// question that changes what happens next and hands over to the funnel
+	// that matches the answer.
+	{ label: "Get Started", href: "/get-started", icon: FileText },
 ];
 
 const pathwayCategories = [
-	{
-		label: "For Students",
-		description: "Study & transition to PR",
-		icon: GraduationCap,
-		href: "/pathways/student",
-	},
 	{
 		label: "For Skilled Professionals",
 		description: "Direct skilled migration",
 		icon: Briefcase,
 		href: "/pathways/skilled",
-	},
-	{
-		label: "Onshore Professionals",
-		description: "Already in Australia? Maximize points",
-		icon: UserCheck,
-		href: "/pathways/onshore",
 	},
 	{
 		label: "For Partners & Families",
@@ -57,6 +48,13 @@ const pathwayCategories = [
 	},
 ];
 
+/**
+ * Only ever populated inside /admin.
+ *
+ * The public site has no accounts, so a visitor on a marketing page holds no
+ * token and there is nothing to show them but the nav. Fetching a profile
+ * there would be one guaranteed-anonymous request per page load.
+ */
 interface HeaderProfile {
 	full_name: string | null;
 	email: string | null;
@@ -78,15 +76,16 @@ export function Header() {
 	const location = useLocation();
 	const scrolled = useScrollState();
 	const [isOpen, setIsOpen] = useState(false);
-	const [quoteOpen, setQuoteOpen] = useState(false);
 	const [profile, setProfile] = useState<HeaderProfile | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+
+	const isAdminPage = location.pathname.startsWith("/admin");
 
 	useEffect(() => {
 		let isMounted = true;
 		const fetchProfile = async () => {
 			try {
-				if (!authService.isAuthenticated()) {
+				if (!isAdminPage || !authService.isAuthenticated()) {
 					if (isMounted) setIsLoading(false);
 					return;
 				}
@@ -104,11 +103,9 @@ export function Header() {
 		};
 		fetchProfile();
 		return () => { isMounted = false; };
-	}, []);
+	}, [isAdminPage]);
 
-	const isAdminPage = location.pathname.startsWith("/admin");
 	const isAuthenticated = !!profile;
-	const visibleLinks = navLinks.filter((l) => l.label !== "Dashboard" || isAuthenticated);
 
 	const containerVariants = {
 		hidden: { opacity: 0, y: -20 },
@@ -194,7 +191,7 @@ export function Header() {
 							</motion.div>
 
 							{/* Nav links with animated active indicator */}
-							{visibleLinks.map((link) => {
+							{navLinks.map((link) => {
 								const isActive = location.pathname === link.href;
 								return (
 									<motion.div key={link.label} variants={itemVariants} className="relative">
@@ -220,17 +217,6 @@ export function Header() {
 									</motion.div>
 								);
 							})}
-
-							{/* Get Quote */}
-							<motion.div variants={itemVariants}>
-								<button
-									onClick={() => setQuoteOpen(true)}
-									className="group relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white/60 transition-all duration-300 hover:text-white hover:bg-white/[0.08]"
-								>
-									<FileText className="w-4 h-4" />
-									Get Quote
-								</button>
-							</motion.div>
 						</motion.nav>
 					)}
 
@@ -247,30 +233,19 @@ export function Header() {
 							</Button>
 						)}
 
-						{!isLoading && (
-							isAuthenticated ? (
-								<motion.div
-									initial={{ scale: 0.8, opacity: 0 }}
-									animate={{ scale: 1, opacity: 1 }}
-									transition={{ type: "spring", stiffness: 300, damping: 20 }}
-								>
-									<UserMenu
-										fullName={profile?.full_name || null}
-										email={profile?.email || null}
-										isAdmin={profile?.is_admin === true}
-									/>
-								</motion.div>
-							) : (
-								<Link to="/auth?intent=login">
-									<Button
-										variant="outline"
-										className="relative h-10 rounded-lg border-accent/40 bg-transparent text-white/90 transition-all duration-300 hover:bg-accent/10 hover:border-accent hover:text-white hover:shadow-[0_0_25px_-5px_rgba(198,161,91,0.4)] overflow-hidden group"
-									>
-										<span className="relative z-10">Log In</span>
-										<div className="absolute inset-0 -translate-x-full group-hover:translate-x-0 bg-gradient-to-r from-accent/0 via-accent/[0.07] to-accent/0 transition-transform duration-500" />
-									</Button>
-								</Link>
-							)
+						{/* No public sign-in. The avatar menu is the admin's way
+						    back out of the suite and appears nowhere else. */}
+						{!isLoading && isAuthenticated && (
+							<motion.div
+								initial={{ scale: 0.8, opacity: 0 }}
+								animate={{ scale: 1, opacity: 1 }}
+								transition={{ type: "spring", stiffness: 300, damping: 20 }}
+							>
+								<UserMenu
+									fullName={profile?.full_name || null}
+									email={profile?.email || null}
+								/>
+							</motion.div>
 						)}
 					</motion.div>
 
@@ -324,7 +299,7 @@ export function Header() {
 												</div>
 
 												<div className="border-t border-white/10 pt-4">
-													{visibleLinks.map((link) => (
+													{navLinks.map((link) => (
 														<Link
 															key={link.label}
 															to={link.href}
@@ -335,25 +310,17 @@ export function Header() {
 															{link.label}
 														</Link>
 													))}
-													<button
-														onClick={() => { setIsOpen(false); setQuoteOpen(true); }}
-														className="flex w-full items-center gap-3 rounded-lg px-4 py-3.5 text-base font-medium text-white/70 transition-all duration-200 hover:bg-white/10 hover:text-white"
-													>
-														<FileText className="w-5 h-5 text-white/40" />
-														Get Quote
-													</button>
 												</div>
 											</>
 										)}
 									</nav>
 
-									<div className="mt-auto border-t border-white/10 p-5">
-										{isAuthenticated ? (
+									{isAuthenticated && (
+										<div className="mt-auto border-t border-white/10 p-5">
 											<div className="flex items-center gap-3">
 												<UserMenu
 													fullName={profile?.full_name || null}
 													email={profile?.email || null}
-													isAdmin={profile?.is_admin === true}
 												/>
 												<div className="flex-1 min-w-0">
 													<p className="text-sm font-medium text-white truncate">
@@ -362,22 +329,14 @@ export function Header() {
 													<p className="text-xs text-white/50">Signed in</p>
 												</div>
 											</div>
-										) : (
-											<Link to="/auth?intent=login" onClick={() => setIsOpen(false)}>
-												<Button variant="outline" className="w-full h-11 rounded-lg border-white/20 bg-white/5 text-white hover:bg-white/10">
-													Log In
-												</Button>
-											</Link>
-										)}
-									</div>
+										</div>
+									)}
 								</div>
 							</SheetContent>
 						</Sheet>
 					</motion.div>
 				</div>
 			</motion.header>
-
-			<QuoteSlideOver open={quoteOpen} onOpenChange={setQuoteOpen} />
 		</>
 	);
 }

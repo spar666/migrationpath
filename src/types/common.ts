@@ -17,14 +17,6 @@ export interface SecurityHeaders {
   'X-XSS-Protection': string;
 }
 
-export interface CompressionResult {
-  originalSize: number;
-  compressedSize: number;
-  format: string;
-  quality: number;
-  success: boolean;
-}
-
 export interface ValidationError {
   field: string;
   message: string;

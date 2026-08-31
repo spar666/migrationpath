@@ -24,7 +24,7 @@ export function useAdminAuth() {
       if (!authService.isAuthenticated()) {
         setIsAdmin(false);
         setLoading(false);
-        navigate("/auth", { replace: true });
+        navigate("/admin/login", { replace: true });
         return;
       }
 
@@ -34,7 +34,7 @@ export function useAdminAuth() {
 
       if (!profile) {
         setIsAdmin(false);
-        navigate("/auth", { replace: true });
+        navigate("/admin/login", { replace: true });
         return;
       }
 
@@ -54,7 +54,9 @@ export function useAdminAuth() {
           description: "You do not have admin privileges.",
         });
         setIsAdmin(false);
-        navigate("/dashboard", { replace: true });
+        // Home, not a user dashboard — the public site has no signed-in area
+        // left to fall back to.
+        navigate("/", { replace: true });
         return;
       }
 
@@ -67,7 +69,7 @@ export function useAdminAuth() {
     } catch (error) {
       console.error("Admin auth check error:", error);
       setIsAdmin(false);
-      navigate("/dashboard", { replace: true });
+      navigate("/", { replace: true });
     } finally {
       setSuppressAuthRedirect(false);
       setLoading(false);

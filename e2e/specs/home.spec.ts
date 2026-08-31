@@ -5,17 +5,16 @@ import { HomePage } from '../pages/home.page';
 /**
  * The landing page hero — the site's front door.
  *
- * Everything else already tested here (points, search, quote, the funnel) is
+ * Everything else already tested here (points, search, the funnel) is
  * downstream of this screen. A visitor who cannot get out of the hero into the
  * right track never reaches any of it, so a regression here costs more than a
  * regression anywhere else and is the least likely to be noticed: the page
  * still renders, still looks right, and simply sends people nowhere.
  *
- * What makes it worth a browser specifically: three of its four states involve
- * no navigation at all. The hero swaps its own contents between `entry`,
- * `skilled-result`, `fast-audit` and `strategy-preview`, so the URL is
- * identical in most of them and proves nothing. Only rendering the thing can
- * tell you which state a visitor ended up in.
+ * What makes it worth a browser specifically: the SKILLED result involves no
+ * navigation at all. The hero swaps its own contents between `entry` and
+ * `skilled-result`, so the URL is identical in both and proves nothing. Only
+ * rendering the thing can tell you which state a visitor ended up in.
  *
  * The intent classifier is the axis these specs vary. One endpoint —
  * GET /search/intent — decides between four different funnels, and each branch
@@ -25,8 +24,8 @@ import { HomePage } from '../pages/home.page';
 test.describe('the two-pronged entry', () => {
   test('offers both tracks on arrival', async ({ page }) => {
     // The product's central claim in one assertion. A hero that renders only
-    // the search box has quietly dropped every partner and parent visitor,
-    // and nothing about the page looks broken.
+    // the search box has quietly dropped every partner visitor, and nothing
+    // about the page looks broken.
     await stubApi(page);
     const home = new HomePage(page);
 
@@ -55,10 +54,11 @@ test.describe('the two-pronged entry', () => {
     await expect(page).toHaveURL(/\/partner-audit$/);
   });
 
-  test('opens the audit in place, and comes back', async ({ page }) => {
-    // Deliberately not a navigation: the fallback card swaps the hero's own
-    // contents. A spec asserting a URL here would pass against a hero that
-    // renders nothing at all.
+  test('sends an unsure visitor to the get-started splitter', async ({ page }) => {
+    // This card used to open a five-question onshore audit inside the hero.
+    // The audit is gone; the card now navigates, and where it navigates is the
+    // whole assertion — a visitor who says "I don't know" is still a lead, and
+    // dropping them is the difference between a fallback and a bounce.
     await stubApi(page);
     const home = new HomePage(page);
 
@@ -66,19 +66,12 @@ test.describe('the two-pronged entry', () => {
     await waitForApp(page);
     await home.auditCardButton().click();
 
-    await expect(home.auditVisaSubclassField()).toBeVisible();
-    await expect(home.familyCtaButton()).toHaveCount(0);
-    await expect(page).toHaveURL(/\/$/);
-
-    // And back — a dead end here strands the visitor on a form they opened by
-    // accident, with the two tracks no longer on screen.
-    await home.auditBackButton().click();
-    await expect(home.familyCtaButton()).toBeVisible();
+    await expect(page).toHaveURL(/\/get-started$/);
   });
 });
 
 test.describe('the smart search', () => {
-  test('groups suggestions into occupations and courses', async ({ page }) => {
+  test('groups suggestions under an occupations heading', async ({ page }) => {
     await stubApi(page);
     const home = new HomePage(page);
 
@@ -86,10 +79,10 @@ test.describe('the smart search', () => {
     await waitForApp(page);
     await home.searchInput().fill('so');
 
-    // Both groups come from the same typed query against two different
-    // endpoints. The hint under the box promises an ANZSCO code, a job title,
-    // a degree and a university all work — this is the half of that promise a
-    // browser can check.
+    // Occupations are the only group now — the "Courses / Degrees" group went
+    // with the course module. The labelled heading is still asserted because
+    // the panel renders it separately from the rows, and a heading that stops
+    // rendering leaves an unlabelled list rather than an error.
     await expect(home.occupationsGroup()).toBeVisible({ timeout: 10_000 });
     await expect(home.suggestion(/Software Engineer/)).toBeVisible();
   });
@@ -193,11 +186,13 @@ test.describe('where each intent sends the visitor', () => {
     await expect(home.searchInput()).toHaveValue('');
   });
 
-  test('STUDENT navigates to the student pathway carrying the query', async ({
+  test('STUDENT falls through to the splitter, not a deleted page', async ({
     page,
   }) => {
-    // The query has to survive the hop. Landing on a bare course page means
-    // re-typing, and this is the point in the funnel where people leave.
+    // The classifier still answers STUDENT — it does not know the student
+    // pathway page and the course module are gone. Following it would 404, so
+    // a student query is routed like an unclassified one. The stub returns the
+    // old STUDENT payload on purpose; the app must not act on it.
     await stubApi(page, { intent: 'student' });
     const home = new HomePage(page);
 
@@ -205,14 +200,17 @@ test.describe('where each intent sends the visitor', () => {
     await waitForApp(page);
     await home.submitFreeText('Master of Nursing');
 
-    await expect(page).toHaveURL(/\/pathways\/student\?q=/, { timeout: 10_000 });
-    expect(decodeURIComponent(page.url())).toContain('Master of Nursing');
+    await expect(page).toHaveURL(/\/get-started$/, { timeout: 10_000 });
   });
 
-  test('FAMILY navigates to wherever the classifier points', async ({ page }) => {
-    // The destination comes from the response, not from a constant in the
-    // frontend — so this asserts the app honours `redirectTo` rather than
-    // hard-coding a route that the backend may later change.
+  test('FAMILY goes to the partner audit, ignoring a stale redirectTo', async ({
+    page,
+  }) => {
+    // The app used to follow the classifier's `redirectTo`. It cannot any
+    // more: the backend still answers a parent-visa query with /parent-audit,
+    // and that route was deleted with the parent funnel. Honouring it would
+    // 404 the visitor at the exact moment they told us what they wanted, so
+    // the stub returns the stale route on purpose and the app must not follow.
     await stubApi(page, {
       intent: 'family',
       intentOverrides: { redirectTo: '/parent-audit' },
@@ -223,10 +221,10 @@ test.describe('where each intent sends the visitor', () => {
     await waitForApp(page);
     await home.submitFreeText('sponsor my mother');
 
-    await expect(page).toHaveURL(/\/parent-audit$/, { timeout: 10_000 });
+    await expect(page).toHaveURL(/\/partner-audit$/, { timeout: 10_000 });
   });
 
-  test('UNKNOWN falls back to the audit rather than a dead end', async ({ page }) => {
+  test('UNKNOWN falls back to the splitter rather than a dead end', async ({ page }) => {
     // The most valuable branch, and the easiest to get wrong: someone whose
     // query could not be classified is still a lead. Showing them nothing is
     // the difference between a fallback and a bounce.
@@ -237,8 +235,7 @@ test.describe('where each intent sends the visitor', () => {
     await waitForApp(page);
     await home.submitFreeText('i have no idea what i qualify for');
 
-    await expect(home.auditVisaSubclassField()).toBeVisible({ timeout: 10_000 });
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/get-started$/, { timeout: 10_000 });
   });
 });
 

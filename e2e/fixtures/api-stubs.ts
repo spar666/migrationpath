@@ -30,7 +30,6 @@ import type { Page, Route } from '@playwright/test';
  *   - newsService reads `envelope.data.data` (a Strapi page inside our own
  *     `{ success, data }` envelope). A flat array renders an empty news page.
  *   - pointsService wants `totalPoints` / `belowPassMark`, not `total`.
- *   - pricingService wants snake_case `professional_fees`, not `price`.
  *
  * Getting these wrong does not fail loudly. It renders the empty state, and a
  * spec asserting "the page rendered" passes against a page that is blank for
@@ -79,12 +78,11 @@ export const OTHER_OCCUPATION = {
 /**
  * A single occupation, as `GET /occupations/:code` returns it.
  *
- * Distinct from the list rows above because `StrategyPreviewCard` reads fields
- * the list never carries: `thresholds` (which become the state-nomination
- * line), `sector`, and the two independent priority flags. Serving it the list
- * payload does not fail — it renders "Check state nomination lists for your
- * occupation" and a sector of "General", which looks like a legitimate result
- * for an occupation with no state demand.
+ * Distinct from the list rows above: the detail endpoint carries `thresholds`,
+ * `sector` and the two independent priority flags, none of which appear on a
+ * list row. Serving a list payload here does not fail — the consumer renders
+ * its "no state demand" fallback, which looks like a legitimate result rather
+ * than a missing field.
  */
 export const OCCUPATION_DETAIL = {
   ...OCCUPATION,
@@ -101,38 +99,24 @@ export const OCCUPATION_DETAIL = {
   ],
 };
 
-export const COURSE = {
-  id: 'course-1',
-  courseTitle: 'Master of Information Technology',
-  universityName: 'Example University',
-  isRegional: true,
-  anzscoCode: '261313',
-  anzscoTitle: 'Software Engineer',
-};
-
 /**
- * The `/search` row, shaped for BOTH of its consumers.
+ * The `/search` row, as `useRealSearch` (occupation search page) reads it.
  *
- * That endpoint is read by two components that expect different fields:
- * `useRealSearch` (occupation search page) renders `title`/`description`,
- * while `useSmartSuggestions` (home hero) maps `courseName`/`university`.
- * Carrying both keys is deliberate — splitting the stub by caller would mean
- * guessing which one a given spec is exercising, and a missing key here is
- * invisible: the section just renders empty.
+ * It used to carry `courseName`/`university` too, for the home hero's course
+ * suggestions. That group is gone with the course module, and the hero now
+ * reads `/occupations` only.
  */
 export const SEARCH_ROW = {
-  id: 'course-1',
+  id: 'search-row-1',
   title: 'Software Engineer — 189 pathway',
   description: 'Skilled Independent',
-  courseName: 'Master of Nursing',
-  university: 'Deakin University',
 };
 
 // --- Intent classification -------------------------------------------------
 //
 // `/search/intent` is the home page's router: whatever it returns decides
-// whether the visitor stays on the hero, or is sent to a course page, a
-// partner audit, or the onshore audit. Each shape below matches one branch of
+// whether the visitor stays on the hero, or is sent to the partner audit or
+// the get-started splitter. Each shape below matches one branch of
 // `IntentResult` in searchService — and they are NOT interchangeable. A
 // SKILLED payload missing `occupation` renders the split-screen against
 // `undefined` and takes the whole page down, which is exactly the class of
@@ -160,6 +144,13 @@ export const SKILLED_INTENT = {
   employerSponsored: [] as unknown[],
 };
 
+/**
+ * Still carries its `courses` array, on purpose.
+ *
+ * The classifier has not been told the course module is gone, so this is what
+ * the app really receives — and the assertion worth making is that it routes
+ * to the splitter anyway instead of acting on a payload it can no longer use.
+ */
 export const STUDENT_INTENT = {
   intent: 'STUDENT' as const,
   query: 'Master of Nursing',
@@ -168,9 +159,6 @@ export const STUDENT_INTENT = {
       id: 'course-1',
       courseName: 'Master of Nursing',
       university: 'Deakin University',
-      isRegional: true,
-      anzscoCode: '254499',
-      occupation: 'Registered Nurse',
     },
   ],
 };
@@ -217,49 +205,16 @@ export const SECOND_NEWS_ARTICLE = {
   is_breaking: false,
 };
 
-/** Matches `ServicePackage` in pricingService. */
-export const PACKAGE = {
-  id: 'pkg-1',
-  package_name: 'Skilled Independent',
-  visa_subclass: '189',
-  category: 'skilled',
-  professional_fees: 4500,
-  government_charges: 4640,
-  estimated_extras: 1200,
-  inclusions: ['Skills assessment support', 'EOI lodgement', 'Document review'],
-  is_active: true,
-  display_order: 1,
-};
-
-export const SECOND_PACKAGE = {
-  ...PACKAGE,
-  id: 'pkg-2',
-  package_name: 'Partner Visa',
-  visa_subclass: '820',
-  category: 'family',
-  professional_fees: 6500,
-  display_order: 2,
-};
-
-/**
- * An inactive package. The Quote page filters these out, and a suite that only
- * ever sees active rows cannot tell whether that filter still works.
- */
-export const INACTIVE_PACKAGE = {
-  ...PACKAGE,
-  id: 'pkg-3',
-  package_name: 'Retired Package',
-  visa_subclass: '999',
-  is_active: false,
-  display_order: 3,
-};
-
 export const SITE_CONFIG = {
   site_name: 'MigrationPath',
   contact_email: 'hello@example.com',
   contact_phone: '+61 2 0000 0000',
 };
 
+// `courses` and `universities` are still returned by /stats and deliberately
+// still stubbed: the frontend stopped reading both with the course module, and
+// a stub that dropped them could not catch the app reading them again by
+// accident. Only `occupations` reaches a page.
 export const PLATFORM_STATS = {
   courses: 512,
   occupations: 214,
@@ -278,15 +233,6 @@ export const USER = {
   anzscoCode: '261313',
 };
 
-export const PROGRESS_RECORD = {
-  id: 'progress-1',
-  title: 'Software Engineer — 189',
-  current_step: 'points_calculator',
-  calculated_points: 80,
-  created_at: '2026-07-01T00:00:00.000Z',
-  updated_at: '2026-07-02T00:00:00.000Z',
-};
-
 /** Matches `StructuredPointsResult` in pointsService. */
 export function pointsResult(overrides: Record<string, unknown> = {}) {
   return {
@@ -300,46 +246,6 @@ export function pointsResult(overrides: Record<string, unknown> = {}) {
     },
     workCapApplied: false,
     belowPassMark: false,
-    ...overrides,
-  };
-}
-
-/**
- * Matches `ParentAuditResult` in parentService.
- *
- * Every field here is load-bearing and the reason is not obvious: the parent
- * dashboard reads `result.predictedVisa.track` and `result.balanceOfFamily.*`
- * on its FIRST render, with no optional chaining. A payload missing either —
- * the generic `{ eligible, reasons, blockers }` shape the other audit
- * endpoints return, for instance — does not render an empty state. It throws
- * during render, the ErrorBoundary swallows the page, and any spec asserting
- * "the book button is absent" passes against a blank screen.
- */
-export function parentAudit(overrides: Record<string, unknown> = {}) {
-  return {
-    auditId: 'parent-audit-1',
-    isEligible: true,
-    status: 'LEGALLY_ELIGIBLE',
-    balanceOfFamily: {
-      childrenInAustralia: 2,
-      totalChildren: 3,
-      percentage: 66.67,
-      pass: true,
-      alternativeLimbPass: true,
-    },
-    sponsorCheck: { pass: true },
-    aos: {
-      sponsorTaxableIncome: 95_000,
-      benchmark: 83_454.8,
-      meetsBenchmark: true,
-      requiresCoAssurer: false,
-    },
-    predictedVisa: {
-      subclass: '864',
-      name: 'Contributory Aged Parent',
-      track: 'contributory_parent',
-    },
-    recommendations: ['Gather evidence of your children’s residency status.'],
     ...overrides,
   };
 }
@@ -412,16 +318,11 @@ export interface Recorder {
   checkoutPayload: () => Record<string, unknown> | null;
   calendlyUrl: () => string | null;
   signinPayload: () => Record<string, unknown> | null;
-  signupPayload: () => Record<string, unknown> | null;
   pointsPayload: () => Record<string, unknown> | null;
-  quotePayload: () => Record<string, unknown> | null;
   partnerPayload: () => Record<string, unknown> | null;
-  parentPayload: () => Record<string, unknown> | null;
   questionnairePayload: () => Record<string, unknown> | null;
-  /** POST /leads — the quote page's intent capture, including the honeypot. */
+  /** POST /leads — enquiry capture, including the honeypot field. */
   leadPayload: () => Record<string, unknown> | null;
-  /** Ids passed to DELETE /users/me/progress/:id, in order. */
-  deletedProgressIds: () => string[];
   /**
    * The `q` sent to GET /search/intent.
    *
@@ -481,20 +382,23 @@ export interface StubOptions {
   errorBody?: unknown;
   /** Return empty collections everywhere — the "no results" state. */
   empty?: boolean;
-  /** Start the session signed in. */
+  /**
+   * Start the session holding a token whose profile is NOT an admin.
+   *
+   * The public site has no accounts, so this is not a "logged-in visitor" any
+   * more — it is the state the admin gate has to reject: a real token, a real
+   * profile, and no admin claim. Keeping it simulable is the only way to test
+   * that the gate fails closed rather than merely redirecting the tokenless.
+   */
   authenticated?: boolean;
-  /** Sign in as an admin. Implies `authenticated` for /auth/me. */
+  /** Start the session signed in as an admin. Implies a token for /auth/me. */
   admin?: boolean;
   /** Overrides for POST /points/calculate/total. */
   points?: Record<string, unknown>;
   /** Overrides for POST /partner/eligibility. */
   partner?: Record<string, unknown>;
-  /** Overrides for POST /parent/audit. */
-  parent?: Record<string, unknown>;
-  /** Overrides for GET /occupations/:code — the strategy preview's source. */
+  /** Overrides for GET /occupations/:code. */
   occupationDetail?: Record<string, unknown>;
-  /** Saved-pathway records for the dashboard. Defaults to one. */
-  progress?: unknown[];
   /** Delay every stubbed response by this many ms — for loading-state specs. */
   latencyMs?: number;
   /**
@@ -518,15 +422,11 @@ export async function stubApi(
   let preScreenPayload: Record<string, unknown> | null = null;
   let checkoutPayload: Record<string, unknown> | null = null;
   let signinPayload: Record<string, unknown> | null = null;
-  let signupPayload: Record<string, unknown> | null = null;
   let pointsPayload: Record<string, unknown> | null = null;
-  let quotePayload: Record<string, unknown> | null = null;
   let partnerPayload: Record<string, unknown> | null = null;
-  let parentPayload: Record<string, unknown> | null = null;
   let questionnairePayload: Record<string, unknown> | null = null;
   let leadPayload: Record<string, unknown> | null = null;
   let intentQuery: string | null = null;
-  const deletedProgressIds: string[] = [];
   let calendlyUrl: string | null = null;
   let statusCalls = 0;
   let reportedBooking: Record<string, unknown> | null = null;
@@ -634,17 +534,6 @@ export async function stubApi(
       return json(route, {
         access_token: 'e2e-fake-token',
         user: currentUser,
-      });
-    }),
-  );
-
-  await page.route(
-    '**/api/v1/auth/signup',
-    handler('/auth/signup', (route) => {
-      signupPayload = route.request().postDataJSON();
-      return json(route, {
-        access_token: 'e2e-fake-token',
-        user: { ...currentUser, id: 'user-2', email: 'new@example.com' },
       });
     }),
   );
@@ -762,81 +651,12 @@ export async function stubApi(
     }),
   );
 
-  await page.route(
-    '**/api/v1/courses**',
-    handler('/courses', (route) => json(route, list([COURSE]))),
-  );
-
-  await page.route(
-    '**/api/v1/pricing/**',
-    handler('/pricing', (route) => json(route, list([]))),
-  );
-
-  await page.route(
-    '**/api/v1/pricing/packages**',
-    handler('/pricing/packages', (route) =>
-      json(route, {
-        success: true,
-        data: collection([PACKAGE, SECOND_PACKAGE, INACTIVE_PACKAGE]),
-      }),
-    ),
-  );
-
-  await page.route(
-    '**/api/v1/pricing/quotes**',
-    handler('/pricing/quotes', (route) => {
-      quotePayload = route.request().postDataJSON();
-      return json(
-        route,
-        envelope({
-          id: 'quote-1',
-          user_id: currentUser.id,
-          package_id: (quotePayload?.package_id as string) ?? PACKAGE.id,
-          status: 'draft',
-          total_amount: 10340,
-          created_at: '2026-07-01T00:00:00.000Z',
-          expires_at: '2026-08-01T00:00:00.000Z',
-        }),
-      );
-    }),
-  );
-
-  await page.route(
-    '**/api/v1/stats**',
-    handler('/stats', (route) => json(route, envelope(PLATFORM_STATS))),
-  );
-
-  await page.route(
-    '**/site-config**',
-    handler('/site-config', (route) => json(route, envelope(SITE_CONFIG))),
-  );
-
-  // --- Authenticated user data ---
-  //
-  // One glob, both methods. `page.route` does not discriminate on verb, so the
-  // DELETE the dashboard fires when a saved pathway is dismissed lands here
-  // too — and answering it with the full list would be a lie the UI cannot
-  // detect, since it removes the row optimistically either way.
-  await page.route(
-    '**/api/v1/users/me/progress**',
-    handler('/users/me/progress', (route, path) => {
-      if (route.request().method() === 'DELETE') {
-        deletedProgressIds.push(path.split('/').pop() ?? '');
-        return json(route, envelope({ message: 'Deleted' }));
-      }
-      return json(
-        route,
-        envelope(options.progress ?? (options.empty ? [] : [PROGRESS_RECORD])),
-      );
-    }),
-  );
-
   // --- Leads ---
   //
-  // Intent capture from the quote page's application dialog. Recorded rather
-  // than merely swallowed because the honeypot lives in this payload: a real
-  // visitor must never send `website`, and the only way to notice that the
-  // field stopped being hidden is to look at what got sent.
+  // Enquiry capture. Recorded rather than merely swallowed because the
+  // honeypot lives in this payload: a real visitor must never send `website`,
+  // and the only way to notice that the field stopped being hidden is to look
+  // at what got sent.
   await page.route(
     '**/api/v1/leads**',
     handler('/leads', (route) => {
@@ -858,25 +678,6 @@ export async function stubApi(
     handler('/partner/eligibility', (route) => {
       partnerPayload = route.request().postDataJSON();
       return json(route, envelope(partnerResult(options.partner)));
-    }),
-  );
-
-  await page.route(
-    '**/api/v1/parent/**',
-    handler('/parent', (route) => {
-      parentPayload = route.request().postDataJSON();
-      return json(route, envelope({ eligible: true, reasons: [], blockers: [] }));
-    }),
-  );
-
-  // Registered after the glob above so it wins — Playwright matches the most
-  // recently registered route first. The generic `/parent/**` shape above is
-  // not a ParentAuditResult and takes the dashboard down on render.
-  await page.route(
-    '**/api/v1/parent/audit',
-    handler('/parent/audit', (route) => {
-      parentPayload = route.request().postDataJSON();
-      return json(route, envelope(parentAudit(options.parent)));
     }),
   );
 
@@ -1058,14 +859,10 @@ export async function stubApi(
     preScreenPayload: () => preScreenPayload,
     checkoutPayload: () => checkoutPayload,
     signinPayload: () => signinPayload,
-    signupPayload: () => signupPayload,
     pointsPayload: () => pointsPayload,
-    quotePayload: () => quotePayload,
     partnerPayload: () => partnerPayload,
-    parentPayload: () => parentPayload,
     questionnairePayload: () => questionnairePayload,
     leadPayload: () => leadPayload,
-    deletedProgressIds: () => [...deletedProgressIds],
     intentQuery: () => intentQuery,
     calendlyUrl: () => calendlyUrl,
     statusCallCount: () => statusCalls,

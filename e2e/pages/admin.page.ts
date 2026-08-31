@@ -34,13 +34,12 @@ export const ADMIN_SCREENS: AdminScreen[] = [
   { path: '/admin/leads', name: 'leads', marker: /leads/i },
   { path: '/admin/site-config', name: 'site config', marker: /site config|configuration/i },
   { path: '/admin/form-logic', name: 'form logic', marker: /form logic/i },
-  { path: '/admin/migration-rules', name: 'migration rules', marker: /migration rules/i },
+  // Path kept for bookmarks; the screen is invitation thresholds now that the
+  // document-requirement tab is gone.
+  { path: '/admin/migration-rules', name: 'invite trends', marker: /invite trends/i },
   { path: '/admin/points-config', name: 'points config', marker: /points/i },
   { path: '/admin/policy-config', name: 'policy config', marker: /policy|legislative/i },
-  { path: '/admin/regional-postcodes', name: 'regional postcodes', marker: /postcode/i },
   { path: '/admin/occupation-lists', name: 'occupation lists', marker: /occupation/i },
-  { path: '/admin/courses', name: 'courses', marker: /course/i },
-  { path: '/admin/invitations', name: 'invitations', marker: /invitation/i },
   { path: '/admin/occupation-master', name: 'occupation master', marker: /occupation/i },
   { path: '/admin/news', name: 'news editor', marker: /news/i },
   { path: '/admin/users', name: 'user oversight', marker: /user/i },

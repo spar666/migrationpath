@@ -112,20 +112,23 @@ export function PathwayCards() {
 
         {/* Cards Grid */}
         <div className="grid gap-6 md:gap-8 lg:grid-cols-2">
+          {/* Onshore no longer has a page of its own — the messaging moved
+              onto the skilled pathway, which is where the 186/190 routes an
+              onshore professional actually takes are described. */}
           <PathwayCard
             type="onshore"
             title="Already in Australia?"
             subtitle="Onshore"
-            description="Track your 186-PR countdown, audit your points, and maximize your Australian experience for faster PR."
+            description="On a 482, 485 or SID visa? Your Australian experience earns points other applicants cannot get."
             features={[
-              "186 ENS 2-year countdown tracker",
-              "Real-time points optimization",
+              "Australian work experience points",
+              "186 ENS employer-sponsored PR",
+              "190 state nomination while onshore",
               "Skills assessment validation",
-              "State nomination comparison",
             ]}
             icon={MapPin}
-            ctaText="Start Points Audit"
-            onClick={() => navigate("/dashboard?pathway=onshore-skilled")}
+            ctaText="See Onshore Options"
+            onClick={() => navigate("/pathways/skilled")}
             index={0}
           />
 

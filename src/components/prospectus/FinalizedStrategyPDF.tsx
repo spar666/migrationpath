@@ -413,7 +413,9 @@ interface FinalizedStrategyPDFProps {
   strategicSummary: string;
   consultationNotes: string;
   generatedDate: string;
-  dashboardUrl: string;
+  /** Where the closing CTA sends the reader. The booking funnel, not a
+   *  client dashboard — that was removed with the user accounts. */
+  ctaUrl: string;
 }
 
 export const FinalizedStrategyPDF = ({
@@ -425,7 +427,7 @@ export const FinalizedStrategyPDF = ({
   strategicSummary,
   consultationNotes,
   generatedDate,
-  dashboardUrl,
+  ctaUrl,
 }: FinalizedStrategyPDFProps) => {
   const getPersonaLabel = (type: string) => {
     switch (type) {
@@ -601,13 +603,13 @@ export const FinalizedStrategyPDF = ({
           <Text style={styles.ctaTitle}>Next Step</Text>
           <Text style={styles.ctaHeadline}>Begin Your Lodgement Journey</Text>
           <Text style={styles.ctaSubtext}>
-            Your personalized document checklist is ready. Upload your supporting documents
-            to complete your migration file and prepare for lodgement.
+            Your personalized document checklist is ready. Book a follow-up session and
+            your agent will walk you through gathering it and preparing for lodgement.
           </Text>
-          <Link src={dashboardUrl} style={styles.ctaButton}>
-            <Text style={styles.ctaButtonText}>Go to Your Dashboard</Text>
+          <Link src={ctaUrl} style={styles.ctaButton}>
+            <Text style={styles.ctaButtonText}>Book Your Next Session</Text>
           </Link>
-          <Text style={styles.ctaLink}>{dashboardUrl}</Text>
+          <Text style={styles.ctaLink}>{ctaUrl}</Text>
         </View>
       </Page>
     </Document>

@@ -11,17 +11,22 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { authService } from "@/services/authService";
-import { LogOut, LayoutDashboard, Settings, Loader2, Shield } from "lucide-react";
+import { LogOut, Settings, Loader2, Shield } from "lucide-react";
 import { toast } from "sonner";
 
+/**
+ * The signed-in menu, which now only ever belongs to an admin — the Header
+ * renders it inside /admin and nowhere else. There is no user dashboard or
+ * account area left to link to, so everything here points back into the
+ * admin suite or signs out to the public site.
+ */
 interface UserMenuProps {
 	fullName: string | null;
 	email: string | null;
 	avatarUrl?: string | null;
-	isAdmin?: boolean;
 }
 
-export function UserMenu({ fullName, email, avatarUrl, isAdmin = false }: UserMenuProps) {
+export function UserMenu({ fullName, email, avatarUrl }: UserMenuProps) {
 	const navigate = useNavigate();
 	const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -80,21 +85,13 @@ export function UserMenu({ fullName, email, avatarUrl, isAdmin = false }: UserMe
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem asChild>
-					<Link to="/dashboard" className="flex items-center gap-2 cursor-pointer">
-						<LayoutDashboard className="w-4 h-4" />
-						Dashboard
+					<Link to="/admin" className="flex items-center gap-2 cursor-pointer text-accent">
+						<Shield className="w-4 h-4" />
+						Admin Suite
 					</Link>
 				</DropdownMenuItem>
-				{isAdmin && (
-					<DropdownMenuItem asChild>
-						<Link to="/admin" className="flex items-center gap-2 cursor-pointer text-accent">
-							<Shield className="w-4 h-4" />
-							Admin Suite
-						</Link>
-					</DropdownMenuItem>
-				)}
 				<DropdownMenuItem asChild>
-					<Link to="/dashboard?tab=settings" className="flex items-center gap-2 cursor-pointer">
+					<Link to="/admin/settings" className="flex items-center gap-2 cursor-pointer">
 						<Settings className="w-4 h-4" />
 						Settings
 					</Link>

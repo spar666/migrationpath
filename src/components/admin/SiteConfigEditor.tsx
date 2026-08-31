@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, Save, Upload, Image as ImageIcon, Type, MousePointer, FileText, Home, Users, Briefcase, GraduationCap } from "lucide-react";
+import { Eye, EyeOff, Save, Upload, Image as ImageIcon, Type, MousePointer, FileText, Home, Users, Briefcase } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,10 +28,8 @@ interface SiteConfig {
     processingTimeHealthcare: string;
     processingTimeTech: string;
   };
-  student: PageConfig;
   skilled: PageConfig;
   partner: PageConfig;
-  onshore: PageConfig;
   footer: {
     maraStatement: string;
     quickLinks: string[];
@@ -52,14 +50,6 @@ const defaultConfig: SiteConfig = {
     processingTimeTech: "14 Days",
     benefits: ["MARA Registered Agents", "2026 Priority Lists", "Real-Time Points Optimizer"],
   },
-  student: {
-    heroHeadline: "Study Your Way to Australian PR",
-    heroSubtext: "Strategic course selection that maximizes your points and accelerates your permanent residency pathway.",
-    heroImage: "",
-    primaryCta: "Find Your Course",
-    secondaryCta: "Calculate Points",
-    benefits: ["Regional Study Bonus", "Post-Study Work Rights", "Direct PR Pathways"],
-  },
   skilled: {
     heroHeadline: "Skilled Migration Made Simple",
     heroSubtext: "Expert guidance for 189, 190, and 491 visa pathways. Real-time state nomination insights.",
@@ -76,14 +66,6 @@ const defaultConfig: SiteConfig = {
     secondaryCta: "Evidence Checklist",
     benefits: ["Evidence Planning", "Timeline Management", "Relationship Documentation"],
   },
-  onshore: {
-    heroHeadline: "Onshore to PR Strategy",
-    heroSubtext: "Transform your temporary visa into permanent residency with our strategic audit and planning tools.",
-    heroImage: "",
-    primaryCta: "Get Strategy Audit",
-    secondaryCta: "Calculate My Points",
-    benefits: ["Visa Bridge Planning", "Work Experience Tracking", "Points Optimization"],
-  },
   footer: {
     maraStatement: "MigrationPath is operated by registered migration agents. MARA Registration: XXXXXX",
     quickLinks: ["Home", "Points Calculator", "News", "Contact"],
@@ -91,14 +73,15 @@ const defaultConfig: SiteConfig = {
   },
 };
 
-type PageKey = "home" | "student" | "skilled" | "partner" | "onshore";
+// One key per page that still exists. Editing copy for a page nobody can
+// reach is worse than not offering the tab: the change saves, and the admin
+// has no way to tell it went nowhere.
+type PageKey = "home" | "skilled" | "partner";
 
 const pageIcons: Record<PageKey, React.ElementType> = {
   home: Home,
-  student: GraduationCap,
   skilled: Briefcase,
   partner: Users,
-  onshore: Briefcase,
 };
 
 export function SiteConfigEditor() {

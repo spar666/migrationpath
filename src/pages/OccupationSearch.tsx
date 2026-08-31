@@ -1,40 +1,18 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/common/navbar/Header";
 import { Footer } from "@/components/common/footer/Footer";
 import { MobileBottomNav } from "@/components/common/navbar/MobileBottomNav";
 import { OccupationSearchTool } from "@/components/search/OccupationSearchTool";
 import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
-import { statsService } from "@/services/statsService";
+import { usePlatformStats } from "@/hooks/usePlatformStats";
 
 export default function OccupationSearch() {
-  const [stats, setStats] = useState({
-    courses: "500+",
-    occupations: "200+",
-    universities: "50+",
-  });
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchStats = async () => {
-      try {
-        const data = await statsService.getStats();
-        if (isMounted) {
-          setStats({
-            courses: `${data.courses}+`,
-            occupations: `${data.occupations}+`,
-            universities: `${data.universities}+`,
-          });
-        }
-      } catch {
-        // keep fallback
-      }
-    };
-    fetchStats();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const [searchParams] = useSearchParams();
+  // Same hook as the home page, so the two cannot disagree — they used to,
+  // each with its own hardcoded fallback.
+  const stats = usePlatformStats();
 
   return (
     <div className="flex min-h-screen flex-col pb-20 md:pb-0">
@@ -57,24 +35,21 @@ export default function OccupationSearch() {
             </div>
 
             {/* Search Tool */}
-            <OccupationSearchTool />
+            <OccupationSearchTool initialQuery={searchParams.get("q") ?? ""} />
 
-            {/* Quick Stats */}
-            <div className="mt-12 flex flex-wrap items-center justify-center gap-10 text-sm text-muted-foreground">
-              {[
-                { value: stats.courses, label: "Courses" },
-                { value: stats.occupations, label: "Occupations" },
-                { value: stats.universities, label: "Universities" },
-              ].map((stat, i) => (
-                <div key={stat.label} className="flex items-center gap-3">
-                  {i > 0 && <div className="hidden h-10 w-px bg-gradient-to-b from-transparent via-border/50 to-transparent sm:block -ml-5 mr-5" />}
-                  <div className="text-center">
-                    <span className="block text-3xl font-bold text-foreground">{stat.value}</span>
-                    <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground/70">{stat.label}</span>
-                  </div>
+            {/* Quick Stats — the real count, or nothing at all. */}
+            {stats && (
+              <div className="mt-12 flex flex-wrap items-center justify-center gap-10 text-sm text-muted-foreground">
+                <div className="text-center">
+                  <span className="block text-3xl font-bold text-foreground">
+                    {stats.occupations.toLocaleString()}
+                  </span>
+                  <span className="text-xs font-medium uppercase tracking-widest text-muted-foreground/70">
+                    Occupations assessed
+                  </span>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
         </section>
 

@@ -7,12 +7,10 @@
 export type { ApiResponse, PaginatedResponse } from './api';
 
 // Auth Types
-export type {
-  LoginRequest,
-  RegisterRequest,
-  AuthResponse,
-  PasswordResetRequest,
-} from './auth';
+//
+// `./auth` is gone. Sign-in is staff-only now and its request/response shapes
+// live next to their single consumer in `@/services/authService`; a second,
+// drifting copy of them in the barrel was what made them worth deleting.
 
 // User Types
 export type {
@@ -22,23 +20,17 @@ export type {
 } from './user';
 
 // User Progress Types
-export type {
-  ProgressStep,
-  UserProgress,
-  SaveProgressDto,
-  UpdateProgressDto,
-} from './userProgress';
+//
+// Removed with the user dashboard — nothing on the public site saves progress
+// against an account any more.
 
 // Document Types
-export type {
-  DocumentData,
-  DocumentUploadRequest,
-  DocumentResponse,
-  DocumentStatus,
-  DocumentType,
-  UserDocument,
-  AdminDocument,
-} from './document';
+//
+// Removed with the document vault. There was never a working upload or review
+// flow behind these — only types, endpoints and an admin button — so keeping
+// them would advertise a feature the product does not have. The funnel's
+// single lead attachment is a separate, much smaller thing and does not build
+// on any of this.
 
 // Occupation Types
 export type {
@@ -78,10 +70,7 @@ export type {
 } from './persona';
 
 // Admin Types
-export type {
-  AdminUserProfile,
-  AdminUserWithDocuments,
-} from './admin';
+export type { AdminUserProfile } from './admin';
 
 // Common & Utility Types
-export type { ApiError, SecurityHeaders, CompressionResult, ValidationError } from './common';
+export type { ApiError, SecurityHeaders, ValidationError } from './common';

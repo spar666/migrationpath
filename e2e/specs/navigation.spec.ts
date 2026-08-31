@@ -27,8 +27,8 @@ test.describe('client-side routing', () => {
     });
 
     await app.revealNav();
-    await app.loginLink().click();
-    await expect(page).toHaveURL(/\/auth/);
+    await app.getStartedLink().click();
+    await expect(page).toHaveURL(/\/get-started/);
 
     const survived = await page.evaluate(
       () => (window as unknown as { __spaMarker?: boolean }).__spaMarker === true,
@@ -41,7 +41,7 @@ test.describe('client-side routing', () => {
     await stubApi(page);
     const app = new AppPage(page);
 
-    for (const path of ['/points-calculator', '/news', '/pathways/skilled', '/quote']) {
+    for (const path of ['/points-calculator', '/news', '/pathways/skilled', '/get-started']) {
       await page.goto(path);
       await waitForApp(page);
       await expect(app.notFoundHeading(), `deep link ${path}`).toHaveCount(0);
@@ -86,7 +86,7 @@ test.describe('the header', () => {
     await expect(page).toHaveURL(/\/$/);
   });
 
-  test('shows a login link to an anonymous visitor', async ({ page }) => {
+  test('shows the get-started call to action to every visitor', async ({ page }) => {
     await stubApi(page);
     const app = new AppPage(page);
 
@@ -94,10 +94,10 @@ test.describe('the header', () => {
     await waitForApp(page);
 
     // On a phone this lives behind the hamburger, so reaching it is part of
-    // the claim: "an anonymous visitor can find the way in" is not satisfied by
-    // a link that exists in the DOM and cannot be got at.
+    // the claim: "a visitor can find the way in" is not satisfied by a link
+    // that exists in the DOM and cannot be got at.
     await app.revealNav();
-    await expect(app.loginLink()).toBeVisible();
+    await expect(app.getStartedLink()).toBeVisible();
   });
 });
 

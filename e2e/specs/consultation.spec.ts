@@ -15,16 +15,16 @@ import { ConsultationPage } from '../pages/consultation.page';
  * because the answers feed a points estimate; a submission missing them
  * produces a confident score built on blanks.
  *
- * Worth naming: submission calls `authService.me()` FIRST and bails with
- * "Please log in to continue" if there is no session. An anonymous visitor can
- * therefore fill in the entire questionnaire before being told it will not be
- * accepted. The spec pins that behaviour rather than endorsing it — see the
- * anonymous test below.
+ * Submission is anonymous. It used to call `authService.me()` first and bail
+ * with "Please log in to continue", which meant an anonymous visitor answered
+ * every question before being told the answers would not be accepted — and
+ * anonymous visitors are the only people who ever fill this in. The account
+ * check is gone with the accounts; the test below pins that it stays gone.
  */
 
 test.describe('the page', () => {
   test.beforeEach(async ({ page }) => {
-    await stubApi(page, { authenticated: true });
+    await stubApi(page);
   });
 
   test('opens the questionnaire without being asked', async ({ page }) => {
@@ -63,7 +63,7 @@ test.describe('the page', () => {
 
 test.describe('the intake gates', () => {
   test.beforeEach(async ({ page }) => {
-    await stubApi(page, { authenticated: true });
+    await stubApi(page);
   });
 
   test('will not advance from step 1 with nothing filled in', async ({ page }) => {
@@ -137,7 +137,7 @@ test.describe('completing the intake', () => {
   }
 
   test('submits the answers and confirms', async ({ page }) => {
-    await stubApi(page, { authenticated: true });
+    await stubApi(page);
     const consult = new ConsultationPage(page);
     await consult.goto();
     await waitForApp(page);
@@ -148,7 +148,7 @@ test.describe('completing the intake', () => {
   });
 
   test('sends the answers it collected, under `responses`', async ({ page }) => {
-    const recorder = await stubApi(page, { authenticated: true });
+    const recorder = await stubApi(page);
     const consult = new ConsultationPage(page);
     await consult.goto();
     await waitForApp(page);
@@ -165,7 +165,7 @@ test.describe('completing the intake', () => {
   });
 
   test('marks the page complete once the intake is done', async ({ page }) => {
-    await stubApi(page, { authenticated: true });
+    await stubApi(page);
     const consult = new ConsultationPage(page);
     await consult.goto();
     await waitForApp(page);
@@ -183,7 +183,6 @@ test.describe('when submission fails', () => {
   test('says so rather than falsely confirming', async ({ page, health }) => {
     health.expectErrors('the dialog logs the failed submission');
     await stubApi(page, {
-      authenticated: true,
       failing: ['/consultation/questionnaire'],
     });
     const consult = new ConsultationPage(page);
@@ -201,12 +200,12 @@ test.describe('when submission fails', () => {
     await expect(consult.confirmationTitle()).toHaveCount(0);
   });
 
-  test('turns an anonymous visitor away rather than dropping the intake', async ({
+  test('accepts an intake from a visitor with no session at all', async ({
     page,
   }) => {
-    // Documenting current behaviour, not endorsing it: the session check runs
-    // at SUBMIT, so an anonymous visitor answers everything before being told.
-    // If this ever moves earlier, this test should be the thing that notices.
+    // The whole point of removing the account check. /auth/me is stubbed to
+    // 401 — the exact condition that used to abandon a completed
+    // questionnaire — and the submission must still go through.
     await stubApi(page, { httpErrors: { '/auth/me': 401 } });
     const consult = new ConsultationPage(page);
     await consult.goto();
@@ -219,6 +218,6 @@ test.describe('when submission fails', () => {
     await consult.forwardButton().click();
     await consult.submitButton().click();
 
-    await expect(consult.confirmationTitle()).toHaveCount(0);
+    await expect(consult.confirmationTitle()).toBeVisible();
   });
 });

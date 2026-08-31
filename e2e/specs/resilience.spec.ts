@@ -20,7 +20,7 @@ import { ConsultPage } from '../pages/consult.page';
 test.describe('when an endpoint fails', () => {
   test('the home page still renders', async ({ page, health }) => {
     health.expectErrors('a failing endpoint logs a console error by design');
-    await stubApi(page, { failing: ['/occupations', '/cms', '/courses'] });
+    await stubApi(page, { failing: ['/occupations', '/cms'] });
     const app = new AppPage(page);
 
     await page.goto('/');
@@ -108,7 +108,7 @@ test.describe('when the API returns nothing', () => {
     await stubApi(page, { empty: true });
     const app = new AppPage(page);
 
-    for (const path of ['/news', '/occupation-search', '/quote']) {
+    for (const path of ['/news', '/occupation-search', '/get-started']) {
       await page.goto(path);
       await waitForApp(page);
       await expect(app.root(), `empty state at ${path}`).toBeVisible();

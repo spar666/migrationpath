@@ -14,7 +14,6 @@ vi.mock('@/lib/apiClient', () => ({
   setSuppressAuthRedirect: vi.fn(),
 }));
 
-const { pricingService } = await import('./pricingService');
 const { siteConfigService } = await import('./siteConfigService');
 const { occupationService } = await import('./occupationService');
 
@@ -34,44 +33,6 @@ beforeEach(() => {
   get.mockReset();
   post.mockReset();
   put.mockReset();
-});
-
-const PACKAGE = { id: 'pkg-1', name: 'Standard', price: 2500 };
-
-describe('pricingService', () => {
-  it('unwraps a { success, data } envelope', async () => {
-    get.mockResolvedValue({ success: true, data: [PACKAGE] });
-    await expect(pricingService.getPackages()).resolves.toEqual([PACKAGE]);
-  });
-
-  it('accepts a bare array', async () => {
-    get.mockResolvedValue([PACKAGE]);
-    await expect(pricingService.getPackages()).resolves.toEqual([PACKAGE]);
-  });
-
-  it('sends the package id and notes when creating a quote', async () => {
-    post.mockResolvedValue({ data: { id: 'quote-1' } });
-
-    await pricingService.createQuote('pkg-1', 'please hurry');
-
-    expect(post.mock.calls[0][1]).toEqual({
-      package_id: 'pkg-1',
-      custom_notes: 'please hurry',
-    });
-  });
-
-  it('omits notes cleanly when none are given', async () => {
-    post.mockResolvedValue({ data: { id: 'quote-1' } });
-    await pricingService.createQuote('pkg-1');
-    expect(post.mock.calls[0][1].custom_notes).toBeUndefined();
-  });
-
-  it('unwraps the created quote', async () => {
-    post.mockResolvedValue({ success: true, data: { id: 'quote-1' } });
-    await expect(pricingService.createQuote('pkg-1')).resolves.toEqual({
-      id: 'quote-1',
-    });
-  });
 });
 
 describe('siteConfigService', () => {

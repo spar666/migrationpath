@@ -97,8 +97,71 @@ export class PointsPage {
     return this.page.getByText(/pass mark met/i);
   }
 
+  /**
+   * Matches both spellings. The badge names the pass mark when the engine
+   * sends one back ("Below pass mark (65)") and omits it when it does not
+   * ("Below the pass mark") — the number is config, not frontend copy.
+   */
   belowPassBadge() {
-    return this.page.getByText(/below pass mark/i);
+    return this.page.getByText(/below (the )?pass mark/i);
+  }
+
+  /** The standing disclaimer under the scorecard. */
+  adviceDisclaimer() {
+    return this.page.getByText(/not migration advice/i);
+  }
+
+  // --- Lead capture ---
+  //
+  // Appears under the scorecard once a real result is on screen. The score
+  // itself is never behind it, which is the assertion the specs open with.
+
+  captureHeading() {
+    return this.page.getByRole('heading', {
+      name: /which of 189 \/ 190 \/ 491/i,
+    });
+  }
+
+  captureName() {
+    return this.page.locator('#calc-lead-name');
+  }
+
+  captureEmail() {
+    return this.page.locator('#calc-lead-email');
+  }
+
+  capturePhone() {
+    return this.page.locator('#calc-lead-phone');
+  }
+
+  captureConsent() {
+    return this.page.locator('#calc-lead-consent');
+  }
+
+  captureSubmit() {
+    return this.page.getByRole('button', { name: /show my subclass breakdown/i });
+  }
+
+  /** Fills the minimum the form accepts and submits it. */
+  async submitCapture(name = 'Ada Lovelace', email = 'ada@example.com') {
+    await this.captureName().fill(name);
+    await this.captureEmail().fill(email);
+    await this.captureConsent().click();
+    await this.captureSubmit().click();
+  }
+
+  // --- Revealed state ---
+
+  subclassBreakdownHeading() {
+    return this.page.getByRole('heading', { name: /against each subclass/i });
+  }
+
+  subclassRow(subclass: '189' | '190' | '491') {
+    return this.page.getByText(new RegExp(`Subclass ${subclass}`));
+  }
+
+  bookButton() {
+    return this.page.getByRole('button', { name: /book your consultation/i });
   }
 
   /** Shown until both selects have a value — the "don't guess" state. */

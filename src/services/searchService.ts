@@ -24,19 +24,15 @@ export interface SkilledIntentResult {
   employerSponsored: EligibleVisa[];
 }
 
-export interface StudentCourse {
-  id: string;
-  courseName: string;
-  university: string;
-  isRegional: boolean;
-  anzscoCode: string | null;
-  occupation: string | null;
-}
-
+/**
+ * The classifier still answers STUDENT, and still attaches a `courses` array
+ * to it. Nothing here reads that array any more — the course module and the
+ * student pathway page are both gone — so it is deliberately not typed. A
+ * STUDENT query is now routed like an unclassified one: see useIntentRouter.
+ */
 export interface StudentIntentResult {
   intent: 'STUDENT';
   query: string;
-  courses: StudentCourse[];
 }
 
 export interface FamilyIntentResult {

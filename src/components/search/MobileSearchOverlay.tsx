@@ -93,7 +93,7 @@ export function MobileSearchOverlay({
                 <Input
                   ref={inputRef}
                   type="text"
-                  placeholder="Search occupations, courses..."
+                  placeholder="Search occupations..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => {

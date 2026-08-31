@@ -28,9 +28,27 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Pencil, Trash2, Calculator, RefreshCw } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Calculator, RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
+/**
+ * WARNING — this screen does not currently drive the calculator.
+ *
+ * It reads and writes `/admin/points-config` (the `points_config` table:
+ * category / attribute_name / points_value / persona_type).
+ *
+ * The calculator posts to `/points/calculate/total`, and the engine behind it
+ * (`points-engine/points-aggregator.service.ts`) reads its bracket values from
+ * a DIFFERENT table — `points_rule`, keyed by `visa_group` — plus two scalars
+ * from `policy_config` (`points.gsmPassMark`, `points.combinedWorkCap`).
+ *
+ * So the calculator IS config-driven, just not by this screen. Editing a row
+ * here changes nothing a visitor sees. Until the backend either points this
+ * screen at `points_rule` or migrates the engine onto `points_config`, the
+ * copy below has to say so — the previous version claimed "changes apply
+ * instantly to all users" and told an admin that adding a rule here would
+ * "enable the calculator", neither of which is true.
+ */
 interface PointsConfig {
   id: string;
   category: string;
@@ -183,7 +201,7 @@ export function PointsConfigManager() {
             Points Configuration
           </h2>
           <p className="text-muted-foreground mt-1">
-            Manage point values for the PR Calculator. Changes apply instantly to all users.
+            Point values stored against personas, for reference.
           </p>
         </div>
         <div className="flex gap-2">
@@ -264,6 +282,24 @@ export function PointsConfigManager() {
         </div>
       </div>
 
+      {/* The screen has to be honest about what it does before an admin
+          spends an afternoon editing values that reach nobody. */}
+      <div className="flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
+        <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-foreground">
+            These values are not yet connected to the public calculator.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            The calculator is config-driven, but it reads the{" "}
+            <code className="font-mono">points_rule</code> brackets and the{" "}
+            <code className="font-mono">policy_config</code> pass mark — not this
+            table. Edits here are stored and shown here, and change nothing a
+            visitor sees. Connecting the two is a backend change.
+          </p>
+        </div>
+      </div>
+
       {/* Loading State */}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
@@ -339,7 +375,10 @@ export function PointsConfigManager() {
                 <Calculator className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="font-semibold text-lg mb-2">No Points Rules Configured</h3>
                 <p className="text-muted-foreground mb-4">
-                  Add your first points rule to enable the calculator.
+                  Nothing has been stored in this table. The public calculator is
+                  unaffected either way — it scores from{" "}
+                  <code className="font-mono">points_rule</code>, which is seeded
+                  separately.
                 </p>
                 <Button onClick={openAddDialog}>
                   <Plus className="w-4 h-4 mr-2" />

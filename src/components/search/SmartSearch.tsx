@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, Loader2, GraduationCap, Briefcase } from 'lucide-react';
+import { Search, Loader2, Briefcase } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import {
   useSmartSuggestions,
   type OccupationSuggestion,
-  type CourseSuggestion,
 } from '@/hooks/useSmartSuggestions';
 
-type FlatItem =
-  | ({ kind: 'occupation' } & OccupationSuggestion)
-  | ({ kind: 'course' } & CourseSuggestion);
+/**
+ * One kind of suggestion now. Courses were the second, and the `kind`
+ * discriminant is kept because the panel is still a labelled group and the
+ * keyboard navigation is written against a flat list of tagged items — the
+ * next group added should slot in the way courses did, not require this to be
+ * rebuilt.
+ */
+type FlatItem = { kind: 'occupation' } & OccupationSuggestion;
 
 interface SmartSearchProps {
   value: string;
@@ -31,7 +35,7 @@ export function SmartSearch({
   value,
   onChange,
   onResolve,
-  placeholder = 'Search an occupation, ANZSCO code, university or degree…',
+  placeholder = 'Search an occupation or ANZSCO code…',
   className,
   isResolving = false,
   onFocus,
@@ -45,10 +49,8 @@ export function SmartSearch({
 
   // Flatten grouped suggestions into a single keyboard-navigable list.
   const flatItems = useMemo<FlatItem[]>(
-    () => [
-      ...suggestions.occupations.map((o) => ({ kind: 'occupation' as const, ...o })),
-      ...suggestions.courses.map((c) => ({ kind: 'course' as const, ...c })),
-    ],
+    () =>
+      suggestions.occupations.map((o) => ({ kind: 'occupation' as const, ...o })),
     [suggestions],
   );
 
@@ -80,12 +82,8 @@ export function SmartSearch({
   };
 
   const selectItem = (item: FlatItem) => {
-    if (item.kind === 'occupation') {
-      // ANZSCO code drives an exact SKILLED classification.
-      commit(item.anzscoCode || item.title, item.title);
-    } else {
-      commit(item.courseName, item.courseName);
-    }
+    // ANZSCO code drives an exact SKILLED classification.
+    commit(item.anzscoCode || item.title, item.title);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -122,7 +120,7 @@ export function SmartSearch({
     const active = highlightedIndex === index;
     return (
       <li
-        key={`${item.kind}-${item.kind === 'occupation' ? item.anzscoCode : item.id}`}
+        key={`${item.kind}-${item.anzscoCode}`}
         className={cn(
           'flex cursor-pointer items-center justify-between px-5 py-3.5 transition-colors',
           active ? 'bg-gold/5' : 'bg-white hover:bg-gold/5',
@@ -130,25 +128,14 @@ export function SmartSearch({
         onClick={() => selectItem(item)}
         onMouseEnter={() => setHighlightedIndex(index)}
       >
-        {item.kind === 'occupation' ? (
-          <div className="flex flex-col gap-0.5">
-            <span className="text-base font-semibold text-navy">
-              {item.title}
-            </span>
-            <span className="text-sm font-medium text-glacier-dark">
-              ANZSCO {item.anzscoCode}
-            </span>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-0.5">
-            <span className="text-base font-semibold text-navy">
-              {item.courseName}
-            </span>
-            <span className="text-sm font-medium text-glacier-dark">
-              {item.university}
-            </span>
-          </div>
-        )}
+        <div className="flex flex-col gap-0.5">
+          <span className="text-base font-semibold text-navy">
+            {item.title}
+          </span>
+          <span className="text-sm font-medium text-glacier-dark">
+            ANZSCO {item.anzscoCode}
+          </span>
+        </div>
       </li>
     );
   };
@@ -191,16 +178,6 @@ export function SmartSearch({
               </li>
             )}
             {flatItems.slice(0, occCount).map((item, i) => renderRow(item, i))}
-
-            {suggestions.courses.length > 0 && (
-              <li className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-[0.15em] text-navy border-y border-navy/10 bg-muted/30">
-                <GraduationCap className="h-3.5 w-3.5 text-glacier-dark" />
-                Courses / Degrees
-              </li>
-            )}
-            {flatItems
-              .slice(occCount)
-              .map((item, i) => renderRow(item, occCount + i))}
           </ul>
         </div>
       )}

@@ -12,9 +12,3 @@ export interface AdminUserProfile {
   createdAt: string;
   lastLogin?: string;
 }
-
-export interface AdminUserWithDocuments extends AdminUserProfile {
-  documentsCount: number;
-  pendingDocuments: number;
-  approvedDocuments: number;
-}

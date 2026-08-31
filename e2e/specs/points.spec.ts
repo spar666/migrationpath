@@ -143,6 +143,121 @@ test.describe('once the profile is complete', () => {
     await expect(points.passMarkBadge()).toHaveCount(0);
   });
 
+  test('names the pass mark the engine used, rather than one of its own', async ({
+    page,
+  }) => {
+    // The point of the wiring. The pass mark lives in admin-editable config,
+    // so the badge must print whatever the engine reports — not a number
+    // compiled into the page. 70 is deliberately not the legislated 65: if
+    // this reads 65, the frontend is quoting itself.
+    await stubApi(page, {
+      points: { totalPoints: 55, belowPassMark: true, passMark: 70 },
+    });
+    const points = new PointsPage(page);
+
+    await points.goto();
+    await waitForApp(page);
+    await points.completeMinimumProfile();
+
+    await expect(points.belowPassBadge()).toHaveText(/\(70\)/, {
+      timeout: 10_000,
+    });
+  });
+
+  test('shows the advice disclaimer before anything is entered', async ({
+    page,
+  }) => {
+    // Standing copy, not tied to a result. A score is the thing people
+    // screenshot; it has to carry its own caveat in every state, including
+    // the empty one.
+    await stubApi(page);
+    const points = new PointsPage(page);
+
+    await points.goto();
+    await waitForApp(page);
+
+    await expect(points.adviceDisclaimer()).toBeVisible();
+  });
+
+  test('shows the score without asking for any details', async ({ page }) => {
+    // The rule the whole capture design hangs off: the number is free. If this
+    // ever fails, the site has gated its highest-traffic free tool.
+    await stubApi(page);
+    const points = new PointsPage(page);
+
+    await points.goto();
+    await waitForApp(page);
+    await points.completeMinimumProfile();
+
+    await expect(points.score()).toHaveText('75', { timeout: 10_000 });
+    await expect(points.subclassBreakdownHeading()).toHaveCount(0);
+  });
+
+  test('captures a prospect into the same pipeline the funnels use', async ({
+    page,
+  }) => {
+    // The point of the feature. A calculator lead has to land in /pre-screen
+    // like every other funnel — a second, parallel list is one an agent
+    // forgets to check. The payload is asserted field by field because a
+    // renamed key lands as a silently thinner record, not an error.
+    const api = await stubApi(page);
+    const points = new PointsPage(page);
+
+    await points.goto();
+    await waitForApp(page);
+    await points.completeMinimumProfile();
+    await expect(points.captureHeading()).toBeVisible({ timeout: 10_000 });
+
+    await points.submitCapture();
+    await expect(points.subclassBreakdownHeading()).toBeVisible({
+      timeout: 10_000,
+    });
+
+    const payload = api.preScreenPayload();
+    expect(payload).toMatchObject({
+      party: 'applicant',
+      source: 'points_calculator',
+      contact: {
+        full_name: 'Ada Lovelace',
+        email: 'ada@example.com',
+        consent_given: true,
+      },
+    });
+
+    // The score travels with the record, or the follow-up call starts blind.
+    const raw = payload?.raw_answers as Record<string, unknown> | undefined;
+    expect(raw?.calculator_score).toMatchObject({ total_points: 75 });
+    expect(raw?.calculator_inputs).toMatchObject({
+      english_level: 'proficient',
+      qualification: 'bachelor_masters',
+    });
+    expect(raw?.competitiveness).toMatchObject({
+      '189': 75,
+      '190': 80,
+      '491': 90,
+    });
+  });
+
+  test('offers a booking CTA into the consultation funnel once captured', async ({
+    page,
+  }) => {
+    await stubApi(page);
+    const points = new PointsPage(page);
+
+    await points.goto();
+    await waitForApp(page);
+    await points.completeMinimumProfile();
+    await expect(points.captureHeading()).toBeVisible({ timeout: 10_000 });
+    await points.submitCapture();
+
+    await expect(points.bookButton()).toBeVisible({ timeout: 10_000 });
+    await points.bookButton().click();
+
+    // Straight into the funnel, carrying the identity the Stripe round trip
+    // later depends on.
+    await expect(page).toHaveURL(/\/consult\/schedule\?prospect_id=/);
+  });
+
   test('surfaces the work-experience cap when the engine applies it', async ({
     page,
   }) => {

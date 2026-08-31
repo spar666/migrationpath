@@ -33,7 +33,6 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
-import { authService } from "@/services/authService";
 import { toast } from "sonner";
 
 interface PreSessionQuestionnaireProps {
@@ -199,12 +198,10 @@ export function PreSessionQuestionnaire({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const user = await authService.me();
-      if (!user) {
-        toast.error("Please log in to continue");
-        return;
-      }
-
+      // Submitted anonymously. This used to require a signed-in user and bail
+      // out with "Please log in to continue", which turned the last step of a
+      // ten-question form into a dead end for the only people who ever fill it
+      // in — visitors who do not have an account.
       await apiClient.post('/consultation/questionnaire', {
         responses: {
           current_occupation: data.current_occupation,

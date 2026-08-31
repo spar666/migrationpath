@@ -6,28 +6,34 @@ import {
   Sparkles,
   Users,
   GraduationCap,
-  ClipboardCheck,
+  Compass,
   Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConsultationCTA } from "@/components/common/ConsultationCTA";
 import { SmartSearch } from "@/components/search/SmartSearch";
 import { MigrationOutlookBanner } from "./MigrationOutlookBanner";
-import {
-  FastAuditForm,
-  StrategyPreviewCard,
-  type AuditFormData,
-} from "@/components/onshore";
 import { useIntentRouter } from "@/hooks/useIntentRouter";
 import { type SkilledIntentResult } from "@/services/searchService";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { statsService } from "@/services/statsService";
+import { usePlatformStats } from "@/hooks/usePlatformStats";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
-type FlowState = "entry" | "fast-audit" | "strategy-preview" | "skilled-result";
+/**
+ * Two states, not four.
+ *
+ * The hero used to swap in a "60-Second Onshore Strategy Audit" and the
+ * strategy preview it produced. Both are gone with the onshore track: the
+ * audit ended by handing the visitor to the pre-screen anyway, so it was five
+ * questions asked twice, and the preview's numbers were an estimate nobody
+ * downstream could use. Anyone who does not know where they fit now goes to
+ * /get-started, which asks the same "which are you" question once and routes.
+ */
+type FlowState = "entry" | "skilled-result";
 
 const FAMILY_ROUTE = "/partner-audit";
 const EMPLOYER_SPONSORED_ROUTE = "/pre-screen";
+const UNSURE_ROUTE = "/get-started";
 
 interface HeroSectionProps {
   onSearchFocus?: () => void;
@@ -42,31 +48,8 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
   const [flowState, setFlowState] = useState<FlowState>("entry");
   const [searchQuery, setSearchQuery] = useState("");
   const [skilled, setSkilled] = useState<SkilledIntentResult | null>(null);
-  const [auditData, setAuditData] = useState<AuditFormData | null>(null);
 
-  const [stats, setStats] = useState({
-    courses: "500+",
-    occupations: "200+",
-    universities: "50+",
-  });
-
-  useEffect(() => {
-    let isMounted = true;
-    statsService
-      .getStats()
-      .then((data) => {
-        if (!isMounted) return;
-        setStats({
-          courses: `${data.courses}+`,
-          occupations: `${data.occupations}+`,
-          universities: `${data.universities}+`,
-        });
-      })
-      .catch((error) => console.error("Failed to fetch dynamic stats:", error));
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const stats = usePlatformStats();
 
   // ---- Smart query router state logic ----
   const { resolve, isResolving } = useIntentRouter({
@@ -75,28 +58,20 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
       setFlowState("skilled-result");
     },
     // STUDENT + FAMILY navigate via the hook's defaults.
-    onUnknown: () => setFlowState("fast-audit"), // "unsure" -> audit fallback
+    onUnknown: () => navigate(UNSURE_ROUTE), // "unsure" -> the splitter
   });
 
   const handleSearchFocus = () => {
     if (isMobile && onSearchFocus) onSearchFocus();
   };
 
-  const handleAuditComplete = (data: AuditFormData) => {
-    setAuditData(data);
-    setFlowState("strategy-preview");
-  };
-
   const resetToEntry = () => {
     setFlowState("entry");
     setSkilled(null);
-    setAuditData(null);
     setSearchQuery("");
   };
 
   const showEntry = flowState === "entry";
-  const showFastAudit = flowState === "fast-audit";
-  const showStrategyPreview = flowState === "strategy-preview";
   const showSkilled = flowState === "skilled-result";
 
   return (
@@ -134,6 +109,10 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
               transition={{ duration: 0.3 }}
             >
               <div className="mx-auto max-w-4xl text-center">
+                {/* "Trusted by 10,000+ migrants" stood here. There are no
+                    users yet, so it was a fabricated social proof claim on the
+                    first thing every visitor reads. Put a real number back
+                    when there is one to put. */}
                 <motion.div
                   className="mb-8 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-5 py-2.5 text-sm font-semibold text-gold-dark shadow-soft-sm"
                   initial={{ opacity: 0, y: 10 }}
@@ -141,7 +120,7 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
                   transition={{ delay: 0.1 }}
                 >
                   <Sparkles className="h-4 w-4 text-gold" />
-                  Trusted by 10,000+ migrants
+                  MARA-registered migration agents
                 </motion.div>
 
                 <motion.h1
@@ -181,7 +160,7 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
                         Work &amp; Study Track
                       </h2>
                       <p className="text-sm text-navy-muted">
-                        Search an occupation or a course
+                        Search an occupation or ANZSCO code
                       </p>
                     </div>
                   </div>
@@ -193,7 +172,7 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
                     isResolving={isResolving}
                   />
                   <p className="mt-3 text-xs text-navy-muted">
-                    e.g. “261313”, “Software Engineer”, “Master of Nursing”, “Deakin”
+                    e.g. “261313”, “Software Engineer”, “Registered Nurse”
                   </p>
                   <Button
                     variant="outline"
@@ -218,7 +197,7 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
                           Family &amp; Partner Track
                         </h2>
                         <p className="text-sm text-white/70">
-                          Partner, spouse or parent sponsorship
+                          Partner or spouse sponsorship
                         </p>
                       </div>
                     </div>
@@ -239,10 +218,10 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
                 </div>
               </motion.div>
 
-              {/* Global fallback audit card */}
+              {/* Global fallback: the Get Started splitter */}
               <motion.button
                 type="button"
-                onClick={() => setFlowState("fast-audit")}
+                onClick={() => navigate(UNSURE_ROUTE)}
                 className="mx-auto mt-5 flex max-w-4xl w-full items-center justify-between gap-4 rounded-2xl border-2 border-dashed border-glacier/50 bg-glacier/5 px-6 py-5 text-left transition-colors hover:border-glacier hover:bg-glacier/10"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -250,42 +229,38 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
               >
                 <span className="flex items-center gap-3">
                   <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-glacier/15">
-                    <ClipboardCheck className="h-5 w-5 text-glacier-dark" />
+                    <Compass className="h-5 w-5 text-glacier-dark" />
                   </span>
                   <span className="flex flex-col">
                     <span className="text-base font-bold text-navy">
                       Unsure of your visa standing?
                     </span>
                     <span className="text-sm text-navy-muted">
-                      Take our 60-Second Onshore Strategy Audit
+                      Answer one question and we'll point you at the right check
                     </span>
                   </span>
                 </span>
                 <ArrowRight className="h-5 w-5 shrink-0 text-navy" />
               </motion.button>
 
-              {/* Quick stats + trust strip */}
-              <motion.div
-                className="mt-12 flex flex-wrap items-center justify-center gap-10 text-sm text-navy-muted"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.45 }}
-              >
-                {[
-                  { value: stats.courses, label: "Courses" },
-                  { value: stats.occupations, label: "Occupations" },
-                  { value: stats.universities, label: "Universities" },
-                ].map((stat) => (
-                  <div key={stat.label} className="text-center">
+              {/* One real count, or nothing. Rendered only once /stats
+                  answers — there is no placeholder figure to fall back on. */}
+              {stats && (
+                <motion.div
+                  className="mt-12 flex flex-wrap items-center justify-center gap-10 text-sm text-navy-muted"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <div className="text-center">
                     <span className="block text-3xl font-bold text-navy">
-                      {stat.value}
+                      {stats.occupations.toLocaleString()}
                     </span>
                     <span className="text-xs font-medium uppercase tracking-widest text-glacier-dark">
-                      {stat.label}
+                      Occupations assessed
                     </span>
                   </div>
-                ))}
-              </motion.div>
+                </motion.div>
+              )}
 
               <MigrationOutlookBanner />
             </motion.div>
@@ -346,34 +321,6 @@ export function HeroSection({ onSearchFocus }: HeroSectionProps) {
             </motion.div>
           )}
 
-          {/* ---------- Fast-Audit ---------- */}
-          {showFastAudit && (
-            <motion.div
-              key="fast-audit"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-            >
-              <FastAuditForm
-                onComplete={handleAuditComplete}
-                onBack={resetToEntry}
-              />
-            </motion.div>
-          )}
-
-          {/* ---------- Strategy Preview ---------- */}
-          {showStrategyPreview && auditData && (
-            <motion.div
-              key="strategy-preview"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.4 }}
-            >
-              <StrategyPreviewCard data={auditData} onBack={resetToEntry} />
-            </motion.div>
-          )}
         </AnimatePresence>
       </div>
     </section>

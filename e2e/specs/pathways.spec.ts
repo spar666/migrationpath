@@ -10,17 +10,14 @@ import { AppPage } from '../pages/app.page';
  * is meant to change, so a spec that asserts on paragraphs goes red for
  * healthy reasons and gets muted. Muted specs are worse than absent ones.
  *
- * What IS worth pinning is the part a copy edit can break invisibly — the
- * `persona` query parameter on every signup CTA. It decides which funnel a new
- * account lands in, it is not rendered anywhere a human would notice, and
- * these five pages are near-identical, so they get copy-pasted from each
- * other. A partner page whose CTA says `persona=skilled` looks completely
- * correct and routes every partner signup into the wrong journey.
+ * What IS worth pinning is where the buttons go. These five pages are
+ * near-identical and get copy-pasted from each other, so a CTA left pointing
+ * at another audience's tool — or at a route that no longer exists — looks
+ * completely correct on the page and is wrong for everyone who clicks it.
  *
- * That is the bug this file exists to catch, and it is why the persona check
- * runs across EVERY signup link on the page rather than just the first: these
- * pages repeat the CTA top and bottom, and it is the second one that gets
- * forgotten.
+ * That is the bug this file exists to catch, and it is why the check runs
+ * across EVERY primary CTA on the page rather than just the first: these pages
+ * repeat the CTA top and bottom, and it is the second one that gets forgotten.
  */
 
 test.beforeEach(async ({ page }) => {
@@ -48,29 +45,12 @@ for (const pathway of PATHWAYS) {
       await expect(app.footer()).toBeVisible();
     });
 
-    test('offers a signup CTA', async ({ page }) => {
+    test('offers a primary CTA', async ({ page }) => {
       const pathways = new PathwayPage(page);
       await pathways.goto(pathway.path);
       await waitForApp(page);
 
-      expect(await pathways.signupLinks().count()).toBeGreaterThan(0);
-    });
-
-    test(`tags every signup CTA with persona=${pathway.persona}`, async ({ page }) => {
-      const pathways = new PathwayPage(page);
-      await pathways.goto(pathway.path);
-      await waitForApp(page);
-
-      const all = pathways.signupLinks();
-      const count = await all.count();
-      expect(count).toBeGreaterThan(0);
-
-      for (let i = 0; i < count; i++) {
-        await expect(all.nth(i)).toHaveAttribute(
-          'href',
-          new RegExp(`persona=${pathway.persona}(\\b|$|&)`),
-        );
-      }
+      expect(await pathways.primaryCtaLinks().count()).toBeGreaterThan(0);
     });
 
     test('points its secondary CTA at the right tool', async ({ page }) => {
@@ -81,15 +61,14 @@ for (const pathway of PATHWAYS) {
       await expect(pathways.secondaryLinks(pathway.secondaryCta).first()).toBeVisible();
     });
 
-    test('the signup CTA actually reaches the auth page', async ({ page }) => {
+    test('the primary CTA actually reaches the pre-screen', async ({ page }) => {
       const pathways = new PathwayPage(page);
       await pathways.goto(pathway.path);
       await waitForApp(page);
 
-      await pathways.signupLinks().first().click();
+      await pathways.primaryCtaLinks().first().click();
 
-      await expect(page).toHaveURL(/\/auth\?/);
-      await expect(page).toHaveURL(new RegExp(`persona=${pathway.persona}`));
+      await expect(page).toHaveURL(/\/pre-screen$/);
     });
 
     test('the secondary CTA actually reaches its tool', async ({ page }) => {
@@ -110,33 +89,28 @@ for (const pathway of PATHWAYS) {
 
       await expect(pathways.hero()).toBeVisible();
       // A CTA that scrolls off the side of a phone is a CTA nobody clicks.
-      await expect(pathways.signupLinks().first()).toBeVisible();
+      await expect(pathways.primaryCtaLinks().first()).toBeVisible();
     });
   });
 }
 
 test.describe('across the set', () => {
-  test('no two pathways share a persona', async ({ page }) => {
-    // The copy-paste failure, checked once at the top rather than five times.
-    // If two pages claim the same persona, one of them is wrong.
-    const personas = PATHWAYS.map((p) => p.persona);
-
-    expect(new Set(personas).size).toBe(personas.length);
-    void page;
-  });
-
-  test('each page claims only its own persona', async ({ page }) => {
+  test('no pathway page still links to a removed route', async ({ page }) => {
+    // /auth, /dashboard and /quote were all removed with the user accounts and
+    // the pricing tool. A link left behind on one of these five near-identical
+    // pages renders perfectly and drops the visitor on the 404 page — which is
+    // exactly the kind of thing nobody clicks in review.
     const pathways = new PathwayPage(page);
+    const removed = ['/auth', '/dashboard', '/quote'];
 
     for (const pathway of PATHWAYS) {
       await pathways.goto(pathway.path);
       await waitForApp(page);
 
-      for (const other of PATHWAYS) {
-        if (other.persona === pathway.persona) continue;
-        // `onshore-skilled` contains `skilled`, so match the full parameter.
+      for (const route of removed) {
         await expect(
-          page.locator(`a[href*="persona=${other.persona}&"], a[href$="persona=${other.persona}"]`),
+          page.locator(`a[href^="${route}"]`),
+          `${pathway.name} links to ${route}`,
         ).toHaveCount(0);
       }
     }

@@ -111,8 +111,8 @@ export default defineConfig(({ mode }) => {
             // react-router used to be in this list, and that was the bug.
             // react-router-dom depends on @remix-run/router, which has no rule
             // of its own and so fell through to `vendor`. That made `react`
-            // import `vendor` while `vendor` (lucide-react, react-hook-form,
-            // @tanstack/react-query, sonner, vaul...) imports `react` — a
+            // import `vendor` while `vendor` (lucide-react, sonner,
+            // @tanstack/react-query...) imports `react` — a
             // cycle. The browser has to pick one side to evaluate first, it
             // picked `vendor`, and `vendor` reached for React.forwardRef
             // before the react chunk had initialised its exports. Hence

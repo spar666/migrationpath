@@ -1,14 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, LayoutDashboard, Calculator, User } from "lucide-react";
+import { Home, Search, Calculator, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
+// No Dashboard or Profile tab: the public site has no accounts. The fourth
+// slot goes to the consultation funnel, which is where every journey here is
+// meant to end.
 const navItems = [
 	{ href: "/", icon: Home, label: "Home" },
 	{ href: "/occupation-search", icon: Search, label: "Search" },
-	{ href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
 	{ href: "/points-calculator", icon: Calculator, label: "Points" },
-	{ href: "/auth", icon: User, label: "Profile" },
+	{ href: "/consultation", icon: FileText, label: "Consult" },
 ];
 
 export function MobileBottomNav() {

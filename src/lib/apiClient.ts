@@ -21,7 +21,7 @@ const DEBUG_API = (import.meta.env.VITE_API_DEBUG || 'false') === 'true';
 const REQUEST_TIMEOUT = parseInt(import.meta.env.VITE_REQUEST_TIMEOUT || '30000');
 const MAX_RETRIES = parseInt(import.meta.env.VITE_MAX_RETRIES || '3');
 
-// Flag to suppress 401 redirect during login/auth flows
+// Flag to suppress 401 redirect during the admin sign-in flow
 let suppress401Redirect = false;
 export function setSuppressAuthRedirect(value: boolean) {
   suppress401Redirect = value;
@@ -82,7 +82,9 @@ axiosInstance.interceptors.response.use(
       case 401:
         if (!suppress401Redirect) {
           localStorage.removeItem('auth_token');
-          window.location.href = '/auth';
+          // Only staff hold a token, so an expired session can only mean an
+          // admin needs to sign in again.
+          window.location.href = '/admin/login';
         }
         return Promise.reject(new AppError('Your session has expired. Please login again.', ErrorCodes.SESSION_EXPIRED, 401));
       case 403:

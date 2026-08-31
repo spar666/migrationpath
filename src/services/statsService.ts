@@ -1,10 +1,17 @@
 import { apiClient } from '@/lib/apiClient';
 import { API_ENDPOINTS } from '@/constants/api';
 
+/**
+ * `/stats` still returns `courses` and `universities`. Neither is read: both
+ * were counts over the course catalogue, which is gone, so one would advertise
+ * a catalogue the site no longer has and the other would count the
+ * universities that used to teach it.
+ *
+ * The occupation count is the only figure here backed by data the site still
+ * holds. See usePlatformStats for why it is shown without a fallback.
+ */
 export interface PlatformStats {
-  courses: number;
   occupations: number;
-  universities: number;
 }
 
 interface StatsApiResponse {

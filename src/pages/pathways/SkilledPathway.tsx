@@ -13,7 +13,9 @@ import {
   Calculator,
   FileText,
   Target,
-  Award
+  Award,
+  UserCheck,
+  TrendingUp
 } from "lucide-react";
 import { apiClient } from "@/lib/apiClient";
 import { POINTS_THRESHOLDS } from "@/constants/config";
@@ -51,6 +53,29 @@ const keyBenefits = [
   "State nomination options (190, 491)",
   "Bring your family to Australia",
   "Work and live anywhere in Australia",
+];
+
+/**
+ * Folded in from the retired /pathways/onshore page.
+ *
+ * Being in Australia already is not a separate visa pathway — it is a set of
+ * advantages within this one. Running it as its own landing page implied a
+ * separate product and split the audience for the same 189/190/186 routes
+ * described below.
+ */
+const onshoreAdvantages = [
+  {
+    title: "Australian work experience points",
+    body: "Skilled employment in Australia earns 5 to 15 points that an offshore applicant with the same career cannot claim.",
+  },
+  {
+    title: "186 ENS after two years",
+    body: "Two years with a sponsoring employer on a 482 or SID visa opens the Temporary Residence Transition stream to permanent residency.",
+  },
+  {
+    title: "State nomination while onshore",
+    body: "Several states reserve 190 and 491 nominations for applicants already living and working in the state.",
+  },
 ];
 
 export default function SkilledPathway() {
@@ -106,9 +131,9 @@ export default function SkilledPathway() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/auth?intent=signup&persona=skilled">
+                <Link to="/pre-screen">
                   <Button className="btn-gold h-auto min-h-12 whitespace-normal px-6 sm:px-8 text-base">
-                    Secure Your Pathway & Open Dashboard
+                    Check Your Eligibility
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
@@ -187,6 +212,45 @@ export default function SkilledPathway() {
           </div>
         </section>
 
+        {/* Already in Australia — folded in from the retired onshore page */}
+        <section className="container px-4 md:px-6 pb-16 md:pb-20">
+          <Card className="max-w-6xl mx-auto border-accent/30 overflow-hidden">
+            <CardContent className="p-8 md:p-10">
+              <div className="flex items-start gap-4 mb-8">
+                <div className="w-12 h-12 rounded-xl gradient-gold flex items-center justify-center shrink-0">
+                  <UserCheck className="w-6 h-6 text-navy" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-luxury text-glacier-dark mb-1">
+                    Already in Australia?
+                  </p>
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground">
+                    On a 482, 485 or SID visa, you start ahead
+                  </h2>
+                  <p className="text-muted-foreground mt-2 max-w-2xl leading-relaxed">
+                    The same skilled pathway applies — but time you have already spent working
+                    here counts. Most onshore professionals reach PR in two to four years.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                {onshoreAdvantages.map((advantage) => (
+                  <div key={advantage.title} className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-accent shrink-0" />
+                      <h3 className="font-semibold text-foreground">{advantage.title}</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {advantage.body}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Benefits & CTA */}
         <section className="bg-muted/50 border-y border-border">
           <div className="container px-4 md:px-6 py-16 md:py-20">
@@ -216,23 +280,23 @@ export default function SkilledPathway() {
                   </div>
                   <div>
                     <p className="text-sm text-white/70">Ready to Start?</p>
-                    <p className="font-semibold">Create Your Free Account</p>
+                    <p className="font-semibold">Free Eligibility Check</p>
                   </div>
                 </div>
                 
                 <p className="text-white/80 mb-6">
-                  Track your EOI status, monitor state nominations, and receive alerts when invitations are issued.
+                  Answer a few questions about your occupation and points and we'll tell you which skilled visas you can realistically target.
                 </p>
                 
-                <Link to="/auth?intent=signup&persona=skilled">
+                <Link to="/pre-screen">
                   <Button className="btn-gold w-full h-auto min-h-12 whitespace-normal text-base">
-                    Secure Your Pathway & Open Dashboard
+                    Check Your Eligibility
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
                 
                 <p className="text-xs text-white/50 mt-4 text-center">
-                  Free forever. No credit card required.
+                  Takes about two minutes. No account needed.
                 </p>
               </Card>
             </div>

@@ -12,25 +12,11 @@ export const PAGINATION = {
   PAGE_SIZES: [5, 10, 25, 50] as const,
 } as const;
 
-export const FILE_UPLOAD = {
-  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
-  ALLOWED_FORMATS: ['pdf', 'doc', 'docx', 'jpg', 'png', 'gif'] as const,
-  ALLOWED_MIME_TYPES: [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-  ] as const,
-} as const;
-
-export const IMAGE_COMPRESSION = {
-  QUALITY: 0.8,
-  MAX_WIDTH: 1920,
-  MAX_HEIGHT: 1080,
-  FORMAT: 'webp',
-} as const;
+// FILE_UPLOAD and IMAGE_COMPRESSION lived here for the document vault and had
+// no other caller. Deliberately not left behind for the funnel's lead
+// attachment to pick up: that is one file stored against a prospect, and it
+// should be specified against what the CRM actually needs rather than inherit
+// a size cap and a MIME list written for a feature that never shipped.
 
 export const CACHE_CONFIG = {
   USER_PROFILE: 5 * 60 * 1000, // 5 minutes

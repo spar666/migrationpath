@@ -5,25 +5,14 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 export const API_ENDPOINTS = {
-  // Auth
-  LOGIN: '/auth/login',
-  REGISTER: '/auth/register',
-  LOGOUT: '/auth/logout',
-  REFRESH_TOKEN: '/auth/refresh',
-  RESET_PASSWORD: '/auth/reset-password',
+  // Auth is staff-only and its two paths (/auth/signin, /auth/me) live in
+  // authService, which is their only caller.
 
   // User
   GET_PROFILE: '/user/profile',
   UPDATE_PROFILE: '/user/profile',
   GET_PREFERENCES: '/user/preferences',
   UPDATE_PREFERENCES: '/user/preferences',
-  USER_PROGRESS: '/users/me/progress',
-
-  // Documents
-  UPLOAD_DOCUMENT: '/documents/upload',
-  GET_DOCUMENTS: '/documents',
-  DELETE_DOCUMENT: '/documents/:id',
-  GET_DOCUMENT: '/documents/:id',
 
   // Occupations
   SEARCH_OCCUPATIONS: '/occupations/search',
@@ -42,13 +31,6 @@ export const API_ENDPOINTS = {
   GET_NEWS_ARTICLE_BY_SLUG: '/cms/news-articles/slug/:slug',
   GET_SUCCESS_STORIES: '/cms/success-stories',
 
-  // Migration Rules
-  MIGRATION_RULES: '/migration/rules',
-
-  // Pricing
-  GET_PRICING_PACKAGES: '/pricing/packages',
-  CREATE_QUOTE: '/pricing/quotes',
-
   // Leads
   CREATE_LEAD: '/leads',
 
@@ -57,7 +39,6 @@ export const API_ENDPOINTS = {
 
   // Admin
   ADMIN_USERS: '/admin/users',
-  ADMIN_DOCUMENTS: '/admin/documents',
   ADMIN_STATISTICS: '/admin/statistics',
 } as const;
 

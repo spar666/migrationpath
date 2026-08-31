@@ -275,8 +275,10 @@ export function AdminStrategyPanel({
         strategy_delivered_at: new Date().toISOString(),
       });
 
-      // Get dashboard URL
-      const dashboardUrl = `${window.location.origin}/dashboard`;
+      // Where the PDF's closing CTA points. The client dashboard it used to
+      // link to no longer exists; the booking funnel is the only self-serve
+      // next step we can put in front of them.
+      const ctaUrl = `${window.location.origin}/pre-screen`;
 
       const pdfProps = {
         fullName: userName || "Migration Candidate",
@@ -287,7 +289,7 @@ export function AdminStrategyPanel({
         strategicSummary: buildStrategicSummary(),
         consultationNotes: notes,
         generatedDate: format(new Date(), "MMMM d, yyyy"),
-        dashboardUrl,
+        ctaUrl,
       };
 
       // Same reason as the prospectus button: the renderer is only worth

@@ -33,7 +33,7 @@ test.describe('the gate', () => {
     await admin.goto();
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/auth/);
+    await expect(page).toHaveURL(/\/admin\/login/);
   });
 
   test('does not render the admin shell to an anonymous visitor', async ({ page }) => {
@@ -47,6 +47,8 @@ test.describe('the gate', () => {
     await expect(admin.sidebar()).toHaveCount(0);
   });
 
+  // A non-admin is sent to the public home page rather than a user area —
+  // there is no signed-in user area left to send them to.
   test('turns away a signed-in visitor who is not an admin', async ({ page, health }) => {
     health.expectErrors('useAdminAuth warns on a denied access attempt');
     await stubApi(page, { authenticated: true });
@@ -54,7 +56,7 @@ test.describe('the gate', () => {
     await admin.goto();
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test('tells a non-admin why they were turned away', async ({ page, health }) => {
@@ -73,7 +75,9 @@ test.describe('the gate', () => {
     await admin.goto();
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/admin/);
+    // `/admin$`, not `/admin`: the rejection path is now /admin/login, which a
+    // loose match would happily accept as proof the admin got in.
+    await expect(page).toHaveURL(/\/admin$/);
     await expect(admin.main()).toBeVisible();
   });
 
@@ -86,7 +90,7 @@ test.describe('the gate', () => {
     await admin.goto();
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/$/);
     await expect(admin.sidebar()).toHaveCount(0);
   });
 });
@@ -117,7 +121,7 @@ test.describe('which admin claim is honoured', () => {
     await admin.goto();
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/admin/);
+    await expect(page).toHaveURL(/\/admin$/);
   });
 
   test('accepts the snake_case is_admin flag', async ({ page }) => {
@@ -126,7 +130,7 @@ test.describe('which admin claim is honoured', () => {
     await admin.goto();
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/admin/);
+    await expect(page).toHaveURL(/\/admin$/);
   });
 
   test('accepts a role of admin', async ({ page }) => {
@@ -135,7 +139,7 @@ test.describe('which admin claim is honoured', () => {
     await admin.goto();
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/admin/);
+    await expect(page).toHaveURL(/\/admin$/);
   });
 
   test('accepts an admin entry in a roles array', async ({ page }) => {
@@ -144,7 +148,7 @@ test.describe('which admin claim is honoured', () => {
     await admin.goto();
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/admin/);
+    await expect(page).toHaveURL(/\/admin$/);
   });
 
   test('rejects a roles array without admin in it', async ({ page, health }) => {
@@ -157,7 +161,7 @@ test.describe('which admin claim is honoured', () => {
     await admin.goto();
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test('rejects a role that merely contains the word admin', async ({ page, health }) => {
@@ -167,7 +171,7 @@ test.describe('which admin claim is honoured', () => {
     await admin.goto();
     await waitForApp(page);
 
-    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page).toHaveURL(/\/$/);
   });
 });
 

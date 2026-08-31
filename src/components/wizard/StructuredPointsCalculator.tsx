@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useStructuredPoints } from "@/hooks/useStructuredPoints";
+import { CalculatorLeadCapture } from "@/components/wizard/CalculatorLeadCapture";
 import type {
   EnglishLevel,
   QualificationLevel,
@@ -39,6 +40,20 @@ const QUALIFICATION_OPTIONS: { value: QualificationLevel; label: string }[] = [
 
 const WORK_CAP_NOTE =
   "Note: Combined Australian and Overseas experience points are capped at the legal maximum of 20 points.";
+
+/**
+ * The score is computed server-side, and every point value behind it lives in
+ * admin-editable config (`points_rule` brackets plus the `points.gsmPassMark`
+ * and `points.combinedWorkCap` scalars in `policy_config`). Nothing in this
+ * file decides how many points anything is worth.
+ *
+ * That is also why the pass mark is not written here. The badge used to spell
+ * the number out in its own copy — a hardcoded duplicate of a configured
+ * value, which would keep showing the old figure the day an admin changed it.
+ * It now names a pass mark only when the server sends one back.
+ */
+const ADVICE_NOTE =
+  "General information only — not migration advice. Your eligibility depends on facts this tool does not collect.";
 
 const BREAKDOWN_LABELS: Record<string, string> = {
   AGE: "Age",
@@ -89,6 +104,8 @@ export function StructuredPointsCalculator() {
   const total = result?.totalPoints ?? 0;
   const belowPass = result?.belowPassMark ?? true;
   const workCapApplied = result?.workCapApplied ?? false;
+  const passMark = result?.passMark;
+  const effectiveDate = result?.pointsTableEffectiveDate;
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -279,12 +296,16 @@ export function StructuredPointsCalculator() {
                   </span>
                 ) : belowPass ? (
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-sm font-semibold text-white/80">
-                    Below pass mark (65)
+                    {passMark !== undefined
+                      ? `Below pass mark (${passMark})`
+                      : "Below the pass mark"}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-lg bg-gold/20 px-3 py-1.5 text-sm font-semibold text-gold-light">
                     <CheckCircle2 className="h-4 w-4" />
-                    Pass mark met (65+)
+                    {passMark !== undefined
+                      ? `Pass mark met (${passMark}+)`
+                      : "Pass mark met"}
                   </span>
                 )}
               </div>
@@ -353,11 +374,31 @@ export function StructuredPointsCalculator() {
             </Card>
           )}
 
+          {/* Lead capture, below the free score and never in front of it.
+              Appears only once there is a real result to talk about — asking
+              for an email before the visitor has seen anything is how the
+              highest-traffic page on the site becomes the one people bounce
+              off. */}
+          {hasRequired && result && !result.ineligibilityReason && (
+            <CalculatorLeadCapture profile={profile} result={result} />
+          )}
+
           {!hasRequired && (
             <p className="text-center text-sm italic text-white/50">
               Select your English level and qualification to see your score.
             </p>
           )}
+
+          {/* Always visible, in every state — a score with no provenance and
+              no disclaimer is the thing people screenshot and act on. The
+              date is shown only when the server sends one; an invented
+              "current as of" is worse than none. */}
+          <p className="text-center text-xs leading-relaxed text-white/40">
+            {effectiveDate && (
+              <>Points table current as of {effectiveDate} &middot; </>
+            )}
+            {ADVICE_NOTE}
+          </p>
         </div>
       </div>
     </div>

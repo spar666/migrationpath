@@ -9,15 +9,34 @@ import {
 export interface IntentRouterCallbacks {
   /** SKILLED: default keeps the result in state for inline split-screen render. */
   onSkilled?: (result: SkilledIntentResult) => void;
-  /** STUDENT: default navigates to the student course-matching screen. */
+  /** STUDENT: default navigates to the get-started splitter. */
   onStudent?: (result: Extract<IntentResult, { intent: 'STUDENT' }>) => void;
   /** FAMILY: default navigates to the relationship form engine. */
   onFamily?: (result: Extract<IntentResult, { intent: 'FAMILY' }>) => void;
-  /** UNKNOWN: default opens the 60-second onshore audit fallback. */
+  /** UNKNOWN: no default. The caller decides where "I don't know" goes. */
   onUnknown?: (result: Extract<IntentResult, { intent: 'UNKNOWN' }>) => void;
 }
 
-const STUDENT_ROUTE = '/pathways/student';
+/**
+ * STUDENT and UNKNOWN share a destination now.
+ *
+ * The classifier still returns STUDENT with a list of matching courses, but
+ * the course module and the student pathway page are both gone — following
+ * either would 404. The splitter is the honest landing place: it asks which
+ * situation applies and routes to a funnel that exists.
+ */
+const STUDENT_ROUTE = '/get-started';
+
+/**
+ * Fixed, rather than following the backend's `redirectTo`.
+ *
+ * The classifier still answers FAMILY with `/parent-audit` for a parent-visa
+ * query, and that route no longer exists — following it would drop the
+ * visitor on the 404 page at the exact moment they told us what they wanted.
+ * The partner check is the only family funnel there is, so FAMILY goes there
+ * until the backend stops naming a route we deleted.
+ */
+const FAMILY_ROUTE = '/partner-audit';
 
 /**
  * Central state logic for the smart query router. Call `resolve(query)` from the
@@ -56,15 +75,13 @@ export function useIntentRouter(callbacks: IntentRouterCallbacks = {}) {
 
           case 'STUDENT':
             if (callbacks.onStudent) callbacks.onStudent(result);
-            else
-              navigate(
-                `${STUDENT_ROUTE}?q=${encodeURIComponent(result.query)}`,
-              );
+            // The query is not carried: nothing at the destination reads it.
+            else navigate(STUDENT_ROUTE);
             break;
 
           case 'FAMILY':
             if (callbacks.onFamily) callbacks.onFamily(result);
-            else navigate(result.redirectTo);
+            else navigate(FAMILY_ROUTE);
             break;
 
           case 'UNKNOWN':

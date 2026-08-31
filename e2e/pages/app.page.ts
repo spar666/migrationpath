@@ -19,34 +19,28 @@ export interface RouteUnderTest {
 
 export const ROUTES: RouteUnderTest[] = [
   { path: '/', name: 'home' },
-  { path: '/auth', name: 'auth' },
-  { path: '/auth?intent=login', name: 'auth (login intent)' },
+  { path: '/get-started', name: 'get started' },
   { path: '/points-calculator', name: 'points calculator' },
   { path: '/occupation-search', name: 'occupation search' },
   { path: '/consultation', name: 'consultation' },
   { path: '/partner-audit', name: 'partner audit' },
-  { path: '/parent-audit', name: 'parent audit' },
-  { path: '/quote', name: 'quote' },
   { path: '/news', name: 'news' },
   { path: '/news/example-update', name: 'news article' },
   { path: '/pre-screen', name: 'pre-screen' },
-  { path: '/pathways/student', name: 'student pathway' },
   { path: '/pathways/skilled', name: 'skilled pathway' },
   { path: '/pathways/partner', name: 'partner pathway' },
-  { path: '/pathways/onshore', name: 'onshore pathway' },
   { path: '/pathways/employer', name: 'employer pathway' },
-  {
-    path: '/dashboard',
-    name: 'dashboard',
-    redirectsWhenAnonymous: '/auth',
-  },
   // The admin app gates on an admin claim, so an anonymous visitor is sent to
   // sign in rather than shown a 404. Listed here so the smoke suite notices if
   // that gate ever stops redirecting — see admin.spec.ts for the real checks.
+  //
+  // /admin/login is the only sign-in surface left: the public site has no
+  // accounts, so there is no /auth and no /dashboard to smoke.
+  { path: '/admin/login', name: 'admin login' },
   {
     path: '/admin',
     name: 'admin',
-    redirectsWhenAnonymous: '/auth',
+    redirectsWhenAnonymous: '/admin/login',
   },
   { path: '/consult/book', name: 'consult book', needsQuery: true },
   { path: '/consult/confirmed', name: 'consult confirmed', needsQuery: true },
@@ -107,13 +101,17 @@ export class AppPage {
   }
 
   /**
-   * `filter({ visible: true })` for the same reason: both copies of the link
-   * exist, and the hidden one sorts first in DOM order — so a bare `.first()`
-   * hands back the desktop link on a phone.
+   * The header's primary call to action, which replaced the "Log In" link when
+   * public accounts were removed.
+   *
+   * `filter({ visible: true })` because both copies of the link exist at every
+   * width — the header renders the desktop nav and the drawer together and
+   * hides one with `md:` classes — and the hidden one sorts first in DOM
+   * order, so a bare `.first()` hands back the desktop link on a phone.
    */
-  loginLink() {
+  getStartedLink() {
     return this.page
-      .getByRole('link', { name: /log in/i })
+      .getByRole('link', { name: /get started/i })
       .filter({ visible: true })
       .first();
   }

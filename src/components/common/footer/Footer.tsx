@@ -3,11 +3,13 @@ import { Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
 import { useSiteConfig } from "@/contexts/SiteConfigContext";
 
 const footerLinks = {
+	// Only routes that exist. "Student Visa" went with the student pathway
+	// page; "Regional Programs" pointed at /pathways/regional, which has never
+	// been a route at all.
 	pathways: [
 		{ label: "Skilled Migration", href: "/pathways/skilled" },
-		{ label: "Regional Programs", href: "/pathways/regional" },
-		{ label: "Student Visa", href: "/pathways/student" },
 		{ label: "Partner Visa", href: "/pathways/partner" },
+		{ label: "Employer Sponsored", href: "/pathways/employer" },
 	],
 	resources: [
 		{ label: "Points Calculator", href: "/points-calculator" },

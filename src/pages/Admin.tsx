@@ -5,15 +5,12 @@ import {
   AdminOverview,
   SiteConfigEditor,
   FormLogicEditor,
-  CourseManager,
-  LiveInvitationsManager,
   NewsEditor,
   OccupationMaster,
   UserOversight,
   MigrationRulesPage,
   PointsConfigManager,
   PolicyConfigManager,
-  RegionalPostcodeManager,
   OccupationListImport,
   LeadsManager,
   ProspectsManager,
@@ -37,11 +34,30 @@ export default function Admin() {
                 <Route path="migration-rules" element={<MigrationRulesPage />} />
                 <Route path="points-config" element={<PointsConfigManager />} />
                 <Route path="policy-config" element={<PolicyConfigManager />} />
-                <Route path="regional-postcodes" element={<RegionalPostcodeManager />} />
+                {/* /admin/regional-postcodes is gone. It maintained postcode
+                    bands for a lookup the points calculator never performs —
+                    "studied in a designated regional area?" is a yes/no
+                    question worth a fixed number of points, and that question
+                    is untouched. Old bookmarks land on the overview.
+
+                    NOTE for whoever removes the backend module: courses still
+                    derive `isRegional` from `campusPostcode` server-side (see
+                    CourseManager). That derivation reads the postcode data.
+                    Dropping the module without replacing it silently
+                    reclassifies every regional course as metropolitan. */}
                 <Route path="occupation-lists" element={<OccupationListImport />} />
                 <Route path="occupations" element={<Navigate to="/admin/occupation-master" replace />} />
-                <Route path="courses" element={<CourseManager />} />
-                <Route path="invitations" element={<LiveInvitationsManager />} />
+                {/* /admin/courses is gone with the course module. Search and
+                    the home page stats both read it — those references were
+                    removed first; see searchService, useSmartSuggestions and
+                    statsService. Old bookmarks land on the overview. */}
+                {/* /admin/invitations is gone with the home page's "Live
+                    Invitations" ticker. The screen existed to hand-type rows
+                    into a feed labelled LIVE; there is no live source to type
+                    them from — SkillSelect's machine-readable feed has been
+                    dead since 2020 — so every row was someone's guess
+                    presented as fact. Old bookmarks fall through to the
+                    catch-all below and land on the overview. */}
                 <Route path="occupation-master" element={<OccupationMaster />} />
                 <Route path="news" element={<NewsEditor />} />
                 <Route path="users" element={<UserOversight />} />

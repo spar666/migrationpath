@@ -8,25 +8,21 @@ export interface OccupationSuggestion {
   title: string;
 }
 
-export interface CourseSuggestion {
-  type: 'course';
-  id: string;
-  courseName: string;
-  university: string;
-}
-
 export interface GroupedSuggestions {
   occupations: OccupationSuggestion[];
-  courses: CourseSuggestion[];
 }
 
-const EMPTY: GroupedSuggestions = { occupations: [], courses: [] };
+const EMPTY: GroupedSuggestions = { occupations: [] };
 
 /**
- * Grouped suggestions for the smart search box. Fetches occupations and courses
- * once (react-query cached), then filters client-side against the debounced
- * query — mirroring the existing useOccupationSearch pattern so behaviour and
- * caching stay consistent across the app.
+ * Suggestions for the smart search box. Fetches occupations once (react-query
+ * cached), then filters client-side against the debounced query — mirroring the
+ * existing useOccupationSearch pattern so behaviour and caching stay consistent
+ * across the app.
+ *
+ * The shape stays grouped despite having one group: the box renders a labelled
+ * section, and courses were the second group until the course module was
+ * removed. Flattening it buys nothing and churns the consumer.
  */
 export function useSmartSuggestions(
   query: string,
@@ -54,22 +50,6 @@ export function useSmartSuggestions(
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: courses, isLoading: loadingCourses } = useQuery({
-    queryKey: ['smart-courses'],
-    queryFn: async () => {
-      const res = await apiClient.get<any>('/search', {
-        params: { data: 'all' },
-      });
-      return unwrapArray(res).map((course: any) => ({
-        type: 'course' as const,
-        id: course.id,
-        courseName: course.courseName || course.course_title || '',
-        university: course.university || course.university_name || '',
-      }));
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
   const suggestions = useMemo<GroupedSuggestions>(() => {
     const q = debounced.toLowerCase().trim();
     if (q.length < 2) return EMPTY;
@@ -82,19 +62,11 @@ export function useSmartSuggestions(
       )
       .slice(0, limitPerGroup);
 
-    const matchedCourses = (courses ?? [])
-      .filter(
-        (c) =>
-          c.courseName.toLowerCase().includes(q) ||
-          c.university.toLowerCase().includes(q),
-      )
-      .slice(0, limitPerGroup);
-
-    return { occupations: matchedOccupations, courses: matchedCourses };
-  }, [debounced, occupations, courses, limitPerGroup]);
+    return { occupations: matchedOccupations };
+  }, [debounced, occupations, limitPerGroup]);
 
   return {
     suggestions,
-    isLoading: loadingOcc || loadingCourses || isDebouncing,
+    isLoading: loadingOcc || isDebouncing,
   };
 }

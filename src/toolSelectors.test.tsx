@@ -11,8 +11,7 @@
  * Covers the locators from:
  *   e2e/pages/points.page.ts
  *   e2e/pages/search.page.ts
- *   e2e/pages/auth.page.ts
- *   e2e/pages/quote.page.ts
+ *   e2e/pages/home.page.ts (the Get Started splitter)
  *
  * What it deliberately does NOT cover: anything that needs layout or real
  * pointer behaviour. Radix `Select` panels, hover-revealed controls and the
@@ -24,16 +23,16 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 /**
  * Radix measures its own controls on mount. jsdom has no layout and therefore
- * no ResizeObserver, so without this the RadioGroup on the signup form throws
- * during the layout effect and the whole render is lost — a failure that looks
- * like a missing selector and is not.
+ * no ResizeObserver, so without this a Radix control throws during the layout
+ * effect and the whole render is lost — a failure that looks like a missing
+ * selector and is not.
  */
 class NoopResizeObserver {
   observe() {}
@@ -41,6 +40,25 @@ class NoopResizeObserver {
   disconnect() {}
 }
 globalThis.ResizeObserver ??= NoopResizeObserver as never;
+
+/**
+ * Same story for framer-motion's `whileInView`, which the Get Started cards
+ * use: it reaches straight for IntersectionObserver on mount, and jsdom has
+ * none. Without this the page throws during the layout effect and renders
+ * nothing — again indistinguishable from a selector that stopped matching.
+ */
+class NoopIntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+  root = null;
+  rootMargin = '';
+  thresholds = [];
+}
+globalThis.IntersectionObserver ??= NoopIntersectionObserver as never;
 
 // --- Service doubles -------------------------------------------------------
 //
@@ -52,36 +70,8 @@ vi.mock('@/services/pointsService', () => ({
   pointsService: { calculateTotal: (...a: unknown[]) => calculateTotal(...a) },
 }));
 
-const getPackages = vi.fn();
-const createQuote = vi.fn();
-vi.mock('@/services/pricingService', () => ({
-  pricingService: {
-    getPackages: (...a: unknown[]) => getPackages(...a),
-    createQuote: (...a: unknown[]) => createQuote(...a),
-  },
-}));
-
-const me = vi.fn();
-const isAuthenticated = vi.fn();
-vi.mock('@/services/authService', () => ({
-  authService: {
-    me: (...a: unknown[]) => me(...a),
-    isAuthenticated: (...a: unknown[]) => isAuthenticated(...a),
-    login: vi.fn(),
-    register: vi.fn(),
-  },
-}));
-
-const getMyProgress = vi.fn();
-vi.mock('@/services/userProgressService', () => ({
-  userProgressService: {
-    getMyProgress: (...a: unknown[]) => getMyProgress(...a),
-    deleteProgress: vi.fn(),
-  },
-}));
-
 vi.mock('@/services/statsService', () => ({
-  statsService: { getStats: vi.fn().mockResolvedValue({ courses: 1, occupations: 1, universities: 1 }) },
+  statsService: { getStats: vi.fn().mockResolvedValue({ occupations: 214 }) },
 }));
 
 // The search box's two hooks are mocked rather than driven, because the
@@ -114,9 +104,7 @@ const { VisaEligibilityCard } = await import(
   './components/search/VisaEligibilityCard'
 );
 const { HeroSection } = await import('./components/home/HeroSection');
-const Auth = (await import('./pages/Auth')).default;
-const Dashboard = (await import('./pages/Dashboard')).default;
-const Quote = (await import('./pages/Quote')).default;
+const GetStarted = (await import('./pages/GetStarted')).default;
 
 // --- Fixtures, mirroring e2e/fixtures/api-stubs.ts -------------------------
 
@@ -134,27 +122,6 @@ const OCCUPATION = {
     { subclass: '190' as const, name: 'State Nominated', color: 'blue' as const, eligible: true },
     { subclass: '491' as const, name: 'Regional Skilled', color: 'yellow' as const, eligible: true },
   ],
-};
-
-const PACKAGE = {
-  id: 'pkg-1',
-  package_name: 'Skilled Independent',
-  visa_subclass: '189',
-  category: 'skilled',
-  professional_fees: 4500,
-  government_charges: 4640,
-  estimated_extras: 1200,
-  inclusions: ['Skills assessment support'],
-  is_active: true,
-  display_order: 1,
-};
-
-const INACTIVE_PACKAGE = {
-  ...PACKAGE,
-  id: 'pkg-3',
-  package_name: 'Retired Package',
-  visa_subclass: '999',
-  is_active: false,
 };
 
 /**
@@ -195,7 +162,7 @@ beforeEach(() => {
   useOccupationSearch.mockReturnValue({ results: [], isLoading: false, error: null });
   useRealSearch.mockReturnValue({ results: [], isLoading: false, error: null });
   useSmartSuggestions.mockReturnValue({
-    suggestions: { occupations: [], courses: [] },
+    suggestions: { occupations: [] },
     isLoading: false,
   });
   resolveIntent.mockResolvedValue({
@@ -219,10 +186,6 @@ beforeEach(() => {
     ],
     employerSponsored: [],
   });
-  getPackages.mockResolvedValue([PACKAGE, INACTIVE_PACKAGE]);
-  getMyProgress.mockResolvedValue([]);
-  isAuthenticated.mockReturnValue(false);
-  me.mockResolvedValue(null);
 });
 
 // ---------------------------------------------------------------------------
@@ -279,11 +242,11 @@ describe('PointsPage.prompt / score', () => {
   });
 });
 
-// The scorecard's other strings — "Pass mark met (65+)", "Below pass mark
-// (65)", the breakdown heading and the work-cap note — are only reachable once
-// both Radix selects have a value, and Radix's listbox does not open under
-// jsdom. They are asserted in points.spec.ts against a real browser. Their
-// literal text is pinned here so a rename still trips something fast:
+// The scorecard's other strings — the pass-mark badges, the breakdown heading
+// and the work-cap note — are only reachable once both Radix selects have a
+// value, and Radix's listbox does not open under jsdom. They are asserted in
+// points.spec.ts against a real browser. Their literal text is pinned here so
+// a rename still trips something fast:
 describe('PointsPage scorecard copy', () => {
   it('is spelled the way the page object matches it', async () => {
     // Read off disk rather than through a `?raw` import: an import that fails
@@ -302,10 +265,22 @@ describe('PointsPage scorecard copy', () => {
       'utf8',
     );
 
-    expect(source).toContain('Pass mark met (65+)');
-    expect(source).toContain('Below pass mark (65)');
+    // Both branches: the badge names a figure only when the server sends one,
+    // and says so without a number when it does not. The literal "65" is
+    // deliberately absent — it lives in `policy_config`, and a copy of it here
+    // is the drift this wiring exists to prevent.
+    expect(source).toContain('Pass mark met (${passMark}+)');
+    expect(source).toContain('Below pass mark (${passMark})');
+    expect(source).toContain('"Pass mark met"');
+    expect(source).toContain('"Below the pass mark"');
+    expect(source).not.toMatch(/pass mark \(65\)/i);
+
     expect(source).toContain('capped at the legal maximum of 20 points');
     expect(source).toMatch(/Couldn.t calculate your score/);
+
+    // The disclaimer is not optional copy — it is the line that keeps an
+    // estimate from reading as advice.
+    expect(source).toContain('not migration advice');
   });
 });
 
@@ -314,7 +289,7 @@ describe('PointsPage scorecard copy', () => {
 // ---------------------------------------------------------------------------
 
 describe('HomePage entry-state selectors', () => {
-  it('resolve to both tracks and the audit fallback', () => {
+  it('resolve to both tracks and the get-started fallback', () => {
     renderAt(<HeroSection />);
 
     // The product's central claim, asserted as three locators. Losing any one
@@ -330,13 +305,15 @@ describe('HomePage entry-state selectors', () => {
     ).toBeInTheDocument();
 
     // The dashed fallback card is one button wrapping both lines of copy, so
-    // its accessible name contains the audit's name too. The page object
-    // matches the first line deliberately — see the comment there.
-    const audit = screen.getByRole('button', { name: /unsure of your visa standing/i });
-    expect(audit).toHaveTextContent(/60-Second Onshore Strategy Audit/i);
+    // the page object matches the first line deliberately — see the comment
+    // there. It used to open the onshore audit inline; it now navigates to
+    // /get-started, which is the only remaining home for "I don't know".
+    expect(
+      screen.getByRole('button', { name: /unsure of your visa standing/i }),
+    ).toBeInTheDocument();
 
     expect(
-      screen.getByPlaceholderText(/search an occupation, anzsco code/i),
+      screen.getByPlaceholderText(/search an occupation or anzsco code/i),
     ).toBeInTheDocument();
   });
 
@@ -355,16 +332,13 @@ describe('HomePage.suggestion / group headers', () => {
     useSmartSuggestions.mockReturnValue({
       suggestions: {
         occupations: [{ type: 'occupation', anzscoCode: '261313', title: 'Software Engineer' }],
-        courses: [
-          { type: 'course', id: 'c1', courseName: 'Master of Nursing', university: 'Deakin University' },
-        ],
       },
       isLoading: false,
     });
 
     renderAt(<HeroSection />);
     fireEvent.change(
-      screen.getByPlaceholderText(/search an occupation, anzsco code/i),
+      screen.getByPlaceholderText(/search an occupation or anzsco code/i),
       { target: { value: 'so' } },
     );
 
@@ -373,9 +347,12 @@ describe('HomePage.suggestion / group headers', () => {
     const items = screen.getAllByRole('listitem');
     const texts = items.map((li) => li.textContent ?? '');
     expect(texts.some((t) => /^Occupations$/.test(t))).toBe(true);
-    expect(texts.some((t) => /Courses \/ Degrees/.test(t))).toBe(true);
     expect(texts.some((t) => /Software Engineer/.test(t))).toBe(true);
-    expect(texts.some((t) => /Master of Nursing/.test(t))).toBe(true);
+
+    // The "Courses / Degrees" group went with the course module. Pinned as an
+    // absence so a half-reverted change cannot quietly bring back a group with
+    // nothing behind it.
+    expect(texts.some((t) => /Courses \/ Degrees/.test(t))).toBe(false);
   });
 
   it('send the ANZSCO code, not the title, when a suggestion is chosen', async () => {
@@ -385,13 +362,12 @@ describe('HomePage.suggestion / group headers', () => {
     useSmartSuggestions.mockReturnValue({
       suggestions: {
         occupations: [{ type: 'occupation', anzscoCode: '261313', title: 'Software Engineer' }],
-        courses: [],
       },
       isLoading: false,
     });
 
     renderAt(<HeroSection />);
-    const input = screen.getByPlaceholderText(/search an occupation, anzsco code/i);
+    const input = screen.getByPlaceholderText(/search an occupation or anzsco code/i);
     fireEvent.change(input, { target: { value: 'software' } });
 
     const row = screen
@@ -407,7 +383,7 @@ describe('HomePage.suggestion / group headers', () => {
 describe('HomePage skilled split-screen selectors', () => {
   it('resolve after a query classifies as SKILLED', async () => {
     renderAt(<HeroSection />);
-    const input = screen.getByPlaceholderText(/search an occupation, anzsco code/i);
+    const input = screen.getByPlaceholderText(/search an occupation or anzsco code/i);
     fireEvent.change(input, { target: { value: '261313' } });
     fireEvent.keyDown(input, { key: 'Enter' });
 
@@ -524,166 +500,32 @@ describe('SearchPage eligibility-card selectors', () => {
 });
 
 // ---------------------------------------------------------------------------
-// AuthPage
+// GetStarted (the splitter that replaced /quote)
 // ---------------------------------------------------------------------------
 
-describe('AuthPage field selectors', () => {
-  it('resolve on the login form', () => {
-    const { container } = renderAt(<Auth />, '/auth?intent=login');
+describe('GetStarted splitter', () => {
+  it('routes each situation to its own funnel', () => {
+    const { container } = renderAt(<GetStarted />, '/get-started');
 
-    expect(container.querySelector('#email')).toBeTruthy();
-    expect(container.querySelector('#password')).toBeTruthy();
+    // The hrefs, not the copy. These three are the whole point of the page:
+    // if one silently changes, every primary CTA on the site quietly starts
+    // dropping people somewhere else.
+    const hrefs = Array.from(container.querySelectorAll('a'))
+      .map((a) => a.getAttribute('href'));
 
-    // Signup-only fields must be absent, or a spec that fills them would pass
-    // against the wrong form.
-    expect(container.querySelector('#fullName')).toBeNull();
-    expect(container.querySelector('#confirmPassword')).toBeNull();
+    expect(hrefs).toContain('/points-calculator');
+    expect(hrefs).toContain('/partner-audit');
+    expect(hrefs).toContain('/pre-screen');
   });
 
-  it('resolve on the signup form, including the persona ids', () => {
-    const { container } = renderAt(<Auth />, '/auth?intent=signup');
+  it('offers no funnel that does not exist yet', () => {
+    // The 485 graduate form and the 858 expert funnel are named in the plan
+    // but unbuilt. An option for either would route to the 404 page.
+    const { container } = renderAt(<GetStarted />, '/get-started');
+    const hrefs = Array.from(container.querySelectorAll('a'))
+      .map((a) => a.getAttribute('href'));
 
-    expect(container.querySelector('#fullName')).toBeTruthy();
-    expect(container.querySelector('#confirmPassword')).toBeTruthy();
-
-    // The page object clicks these by id. They are the persona slugs the API
-    // receives verbatim as `personaType`.
-    for (const persona of ['student', 'skilled', 'onshore-skilled', 'partner', 'employer']) {
-      expect(container.querySelector(`#${CSS.escape(persona)}`)).toBeTruthy();
-    }
-  });
-});
-
-describe('AuthPage.submitButton', () => {
-  it('is unambiguous in both modes', () => {
-    // The reason the page object pins `type=submit` rather than a label: in
-    // signup mode the submit reads "Create Account" and the toggle beneath it
-    // reads "Sign in", so a name-based locator covering both modes matches
-    // two elements and fails Playwright's strict mode.
-    const login = renderAt(<Auth />, '/auth?intent=login');
-    expect(login.container.querySelectorAll('button[type="submit"]')).toHaveLength(1);
-    expect(login.container.querySelector('button[type="submit"]')).toHaveTextContent(/sign in/i);
-    login.unmount();
-
-    const signup = renderAt(<Auth />, '/auth?intent=signup');
-    expect(signup.container.querySelectorAll('button[type="submit"]')).toHaveLength(1);
-    expect(signup.container.querySelector('button[type="submit"]')).toHaveTextContent(
-      /create account/i,
-    );
-  });
-});
-
-// ---------------------------------------------------------------------------
-// DashboardPage
-// ---------------------------------------------------------------------------
-
-describe('DashboardPage selectors', () => {
-  it('resolve for a signed-in visitor with a saved pathway', async () => {
-    isAuthenticated.mockReturnValue(true);
-    me.mockResolvedValue({
-      id: 'user-1',
-      email: 'ada@example.com',
-      fullName: 'Ada Lovelace',
-      personaType: 'skilled',
-      isAdmin: false,
-      pointsScore: 75,
-    });
-    getMyProgress.mockResolvedValue([
-      {
-        id: 'progress-1',
-        title: 'Software Engineer — 189',
-        current_step: 'points_calculator',
-        calculated_points: 80,
-      },
-    ]);
-
-    const { container } = renderAt(<Dashboard />, '/dashboard');
-
-    expect(await screen.findByText('Saved Pathways')).toBeInTheDocument();
-    expect(screen.getByText('Software Engineer — 189')).toBeInTheDocument();
-
-    // The quick-stats figure the page object digs out by class. 80, not 75:
-    // the saved pathway's calculated score outranks the profile's stale one,
-    // which is the assertion auth.spec.ts makes and the reason the two
-    // fixtures deliberately disagree.
-    const pointsCell = container.querySelector('span.tabular-nums');
-    expect(pointsCell).toHaveTextContent('80');
-
-    // The dismiss control is found via the lucide icon class.
-    expect(container.querySelector('svg.lucide-x')).toBeTruthy();
-  });
-
-  it('resolve in the empty state', async () => {
-    isAuthenticated.mockReturnValue(true);
-    me.mockResolvedValue({ id: 'user-1', email: 'ada@example.com', fullName: 'Ada Lovelace' });
-    getMyProgress.mockResolvedValue([]);
-
-    renderAt(<Dashboard />, '/dashboard');
-
-    expect(await screen.findByText(/no saved pathways yet/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /browse courses/i })).toBeInTheDocument();
-  });
-
-  it('resolve on the profile-error state', async () => {
-    isAuthenticated.mockReturnValue(true);
-    me.mockRejectedValue(new Error('boom'));
-
-    renderAt(<Dashboard />, '/dashboard');
-    expect(await screen.findByText(/profile not found/i)).toBeInTheDocument();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// QuotePage
-// ---------------------------------------------------------------------------
-
-describe('QuotePage selectors', () => {
-  it('resolve on the pricing table, and hide retired packages', async () => {
-    renderAt(<Quote />, '/quote');
-
-    expect(await screen.findByRole('heading', { name: /skilled migration/i })).toBeInTheDocument();
-    expect(screen.getByText('Skilled Independent')).toBeInTheDocument();
-    expect(screen.queryByText('Retired Package')).not.toBeInTheDocument();
-
-    expect(
-      screen.getByRole('heading', { name: /select a visa subclass/i }),
-    ).toBeInTheDocument();
-  });
-
-  it('resolve on the summary once a package is chosen', async () => {
-    renderAt(<Quote />, '/quote');
-    fireEvent.click(await screen.findByText('Skilled Independent'));
-
-    // Two elements now read "Subclass 189" — the card and the summary. This
-    // is exactly why the page object takes `.last()`; without it Playwright's
-    // strict mode fails here.
-    const badges = screen.getAllByText('Subclass 189');
-    expect(badges.length).toBeGreaterThan(1);
-
-    // 4500 + 4640 + 1200 - 150 credit.
-    expect(screen.getByText('$10,190')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /start application/i })).toBeInTheDocument();
-  });
-
-  it('resolve on the application dialog', async () => {
-    renderAt(<Quote />, '/quote');
-    fireEvent.click(await screen.findByText('Skilled Independent'));
-    fireEvent.click(screen.getByRole('button', { name: /start application/i }));
-
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByLabelText(/full name/i)).toHaveAttribute('id', 'app-name');
-    expect(within(dialog).getByLabelText(/email address/i)).toHaveAttribute('id', 'app-email');
-    expect(within(dialog).getByLabelText(/phone number/i)).toHaveAttribute('id', 'app-phone');
-
-    // The honeypot is present and empty. It is positioned off-screen rather
-    // than hidden, which is what makes it fillable by a bot and invisible to
-    // everyone else.
-    const honeypot = within(dialog).getByLabelText(/leave this field blank/i);
-    expect(honeypot).toHaveAttribute('id', 'app-website');
-    expect(honeypot).toHaveValue('');
-
-    expect(
-      within(dialog).getByRole('button', { name: /continue to payment/i }),
-    ).toBeInTheDocument();
+    expect(hrefs).not.toContain('/quote');
+    expect(hrefs.some((h) => h?.includes('485') || h?.includes('858'))).toBe(false);
   });
 });

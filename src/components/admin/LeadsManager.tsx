@@ -111,7 +111,7 @@ export function LeadsManager() {
             Leads
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Quote requests from the quick-quote form and /quote page, plus partner-visa eligibility quiz submissions.
+            Enquiries captured across the site, plus partner-visa eligibility quiz submissions. (The quote form and /quote page that produced the older `quote_slideover` and `quote_page` leads have been removed — those rows stay here.)
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => fetchLeads(page)} className="gap-2">
