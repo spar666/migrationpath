@@ -9,7 +9,7 @@ import type { Page } from '@playwright/test';
  * marketing edit can break silently:
  *
  *   - the page renders its own hero rather than a blank shell
- *   - the primary CTA reaches the pre-screen, the site's one front door
+ *   - the primary CTA reaches the funnel that matches THIS page's audience
  *   - the secondary CTA points at the tool this audience actually needs
  *
  * These pages are near-identical and get copy-pasted from each other, so a
@@ -22,6 +22,15 @@ export interface PathwayUnderTest {
   name: string;
   /** Distinctive words from the h1. Matched loosely — it spans two lines. */
   heading: RegExp;
+  /**
+   * The funnel this page's audience belongs in.
+   *
+   * Per-pathway, not shared. All three pages used to send everyone to
+   * /pre-screen — the employer-sponsored questionnaire — which asked a partner
+   * applicant about their sponsor's ABN and a skilled applicant about a job
+   * offer they had not been asked to have.
+   */
+  primaryCta: string;
   /** Where the secondary CTA goes. */
   secondaryCta: string;
 }
@@ -31,18 +40,21 @@ export const PATHWAYS: PathwayUnderTest[] = [
     path: '/pathways/skilled',
     name: 'skilled',
     heading: /direct pr route/i,
-    secondaryCta: '/points-calculator',
+    primaryCta: '/points-calculator',
+    secondaryCta: '/consultation',
   },
   {
     path: '/pathways/partner',
     name: 'partner',
     heading: /join your partner/i,
-    secondaryCta: '/partner-audit',
+    primaryCta: '/partner-audit',
+    secondaryCta: '/consultation',
   },
   {
     path: '/pathways/employer',
     name: 'employer',
     heading: /australian employer/i,
+    primaryCta: '/pre-screen',
     secondaryCta: '/occupation-search',
   },
 ];
@@ -66,15 +78,23 @@ export class PathwayPage {
    * somewhere else — exactly the kind of thing that gets copy-pasted from
    * another pathway page and never noticed.
    *
-   * These used to be persona-tagged sign-up links. There are no accounts to
-   * sign up for now, so every pathway page sends its visitor into the same
-   * pre-screen and the persona travels in their answers instead of the URL.
+   * These used to be persona-tagged sign-up links, and then — once the
+   * accounts went — a single shared link to /pre-screen. Neither was right:
+   * the persona decides which questionnaire can actually assess the visitor,
+   * so the destination is passed in per pathway rather than fixed here.
+   *
+   * Scoped to <main>, and that scope is load-bearing. Several CTA targets
+   * (/points-calculator, /occupation-search) are also header and bottom-nav
+   * entries, and the header copy comes first in the DOM — so an unscoped
+   * `.first()` picks up the nav link, which is display:none at phone widths.
+   * The spec then fails on a visible, working button because it was looking
+   * at the chrome.
    */
-  primaryCtaLinks() {
-    return this.page.locator('a[href="/pre-screen"]');
+  primaryCtaLinks(href: string) {
+    return this.page.locator(`main a[href="${href}"]`);
   }
 
   secondaryLinks(href: string) {
-    return this.page.locator(`a[href="${href}"]`);
+    return this.page.locator(`main a[href="${href}"]`);
   }
 }

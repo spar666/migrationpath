@@ -18,6 +18,11 @@ import { AppPage } from '../pages/app.page';
  * That is the bug this file exists to catch, and it is why the check runs
  * across EVERY primary CTA on the page rather than just the first: these pages
  * repeat the CTA top and bottom, and it is the second one that gets forgotten.
+ *
+ * The primary CTA is asserted per pathway, not as one shared destination. All
+ * three pages previously pointed at /pre-screen, so a partner applicant was
+ * sent to the employer-sponsored questionnaire from copy promising to ask
+ * about their relationship — the exact defect described above, passing.
  */
 
 test.beforeEach(async ({ page }) => {
@@ -50,7 +55,7 @@ for (const pathway of PATHWAYS) {
       await pathways.goto(pathway.path);
       await waitForApp(page);
 
-      expect(await pathways.primaryCtaLinks().count()).toBeGreaterThan(0);
+      expect(await pathways.primaryCtaLinks(pathway.primaryCta).count()).toBeGreaterThan(0);
     });
 
     test('points its secondary CTA at the right tool', async ({ page }) => {
@@ -61,14 +66,14 @@ for (const pathway of PATHWAYS) {
       await expect(pathways.secondaryLinks(pathway.secondaryCta).first()).toBeVisible();
     });
 
-    test('the primary CTA actually reaches the pre-screen', async ({ page }) => {
+    test('the primary CTA actually reaches its funnel', async ({ page }) => {
       const pathways = new PathwayPage(page);
       await pathways.goto(pathway.path);
       await waitForApp(page);
 
-      await pathways.primaryCtaLinks().first().click();
+      await pathways.primaryCtaLinks(pathway.primaryCta).first().click();
 
-      await expect(page).toHaveURL(/\/pre-screen$/);
+      await expect(page).toHaveURL(new RegExp(`${pathway.primaryCta}$`));
     });
 
     test('the secondary CTA actually reaches its tool', async ({ page }) => {
@@ -89,7 +94,7 @@ for (const pathway of PATHWAYS) {
 
       await expect(pathways.hero()).toBeVisible();
       // A CTA that scrolls off the side of a phone is a CTA nobody clicks.
-      await expect(pathways.primaryCtaLinks().first()).toBeVisible();
+      await expect(pathways.primaryCtaLinks(pathway.primaryCta).first()).toBeVisible();
     });
   });
 }
