@@ -35,15 +35,10 @@ e2e/
     consult.page.ts
     points.page.ts
     search.page.ts
-    auth.page.ts     sign-in/up and the dashboard it lands on
-    quote.page.ts
-    audit.page.ts    the 60-Second Strategy Audit and its strategy preview,
-                     plus the option tables both tracks are driven from
     partner.page.ts  the partner eligibility quiz, plus its step walker
-    parent.page.ts   the parent gateway, plus its +/- stepper driver
     news.page.ts     the news index and article pages
     consultation.page.ts
-    pathways.page.ts the five landing pages and their expected personas
+    pathways.page.ts the four landing pages and where their CTAs point
     admin.page.ts    the admin gate and the list of admin screens
   specs/
     smoke.spec.ts       every route renders
@@ -52,20 +47,14 @@ e2e/
     resilience.spec.ts  what happens when the API misbehaves
     points.spec.ts      the calculator: gating, debounce, engine contract
     search.spec.ts      occupation search and the eligibility mapping
-    auth.spec.ts        sign-in/up routing, and the dashboard
-    quote.spec.ts       pricing, lead capture, the sign-in round trip
-    tracks.spec.ts      both home page tracks driven field by field: every
-                        option in the 60-Second Strategy Audit, and the
-                        numbers the strategy preview derives from them
     partner-audit.spec.ts  the quiz: branching, validation, three verdicts
-    parent-audit.spec.ts   balance of family, AoS benchmark, verdicts
     consultation.spec.ts   the pre-session intake dialog
     news.spec.ts        index, article, slug routing, empty and failed states
-    pathways.spec.ts    the five landing pages and their signup personas
+    pathways.spec.ts    the four landing pages and where their CTAs point
     admin.spec.ts       the gate (four admin claim shapes) and per-screen smoke
 ```
 
-## Two helpers worth knowing about
+## A helper worth knowing about
 
 **`PartnerAuditPage.completeToEnd()`** walks the fifteen-step quiz by reading
 the DOM rather than replaying a hardcoded list of answers. The quiz branches —
@@ -73,10 +62,6 @@ answering "Australia" opens four questions an offshore applicant never sees —
 so a fixed script would encode today's question order into a helper every spec
 depends on and go red on a copy change that broke nothing. Specs that care
 about a specific branch drive it themselves.
-
-**`ParentAuditPage.setStepper()`** clicks +/- until a count reads what the spec
-asked for. The child counts are steppers, not inputs; there is nothing to type
-into.
 
 `testDir` points at `specs/`, so fixtures and page objects are never collected
 as tests.
@@ -167,7 +152,7 @@ every width and hides one with `md:` classes, so **the links a phone user
 cannot reach are still in the DOM and still match a locator**. A spec that
 clicks a nav link passes on desktop and fails on mobile — which is the correct
 outcome, and the reason `AppPage.revealNav()` and the `filter({ visible: true })`
-on `loginLink()` exist.
+on `getStartedLink()` exist.
 
 jsdom cannot mirror this one: it has no layout, so nothing there knows an
 element is hidden by a breakpoint. The mobile project is the only thing
