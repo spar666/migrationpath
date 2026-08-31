@@ -131,16 +131,16 @@ export default function SkilledPathway() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/pre-screen">
+                <Link to="/points-calculator">
                   <Button className="btn-gold h-auto min-h-12 whitespace-normal px-6 sm:px-8 text-base">
-                    Check Your Eligibility
+                    <Calculator className="w-4 h-4 mr-2" />
+                    Calculate Your Points
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/points-calculator">
+                <Link to="/consultation">
                   <Button variant="outline" className="h-12 px-8 border-white/30 text-white bg-white/5 hover:bg-white/10">
-                    <Calculator className="w-4 h-4 mr-2" />
-                    Calculate Your Points
+                    Speak to an Agent
                   </Button>
                 </Link>
               </div>
@@ -288,7 +288,7 @@ export default function SkilledPathway() {
                   Answer a few questions about your occupation and points and we'll tell you which skilled visas you can realistically target.
                 </p>
                 
-                <Link to="/pre-screen">
+                <Link to="/points-calculator">
                   <Button className="btn-gold w-full h-auto min-h-12 whitespace-normal text-base">
                     Check Your Eligibility
                     <ArrowRight className="w-4 h-4 ml-2" />

@@ -95,16 +95,16 @@ export default function PartnerPathway() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/pre-screen">
+                <Link to="/partner-audit">
                   <Button className="btn-gold h-auto min-h-12 whitespace-normal px-6 sm:px-8 text-base">
                     Check Your Eligibility
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
-                <Link to="/partner-audit">
+                <Link to="/consultation">
                   <Button variant="outline" className="h-12 px-8 border-white/30 text-white bg-white/5 hover:bg-white/10">
                     <FileText className="w-4 h-4 mr-2" />
-                    Check Your Eligibility
+                    Speak to an Agent
                   </Button>
                 </Link>
               </div>
@@ -211,7 +211,7 @@ export default function PartnerPathway() {
                   Answer a few questions about your relationship and we'll tell you which partner visa fits and what evidence you'll need to gather.
                 </p>
                 
-                <Link to="/pre-screen">
+                <Link to="/partner-audit">
                   <Button className="btn-gold w-full h-auto min-h-12 whitespace-normal text-base">
                     Check Your Eligibility
                     <ArrowRight className="w-4 h-4 ml-2" />
