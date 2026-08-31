@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { MapPin, Plane, ArrowRight, Timer, Target, ChevronRight } from "lucide-react";
+import { MapPin, Plane, ArrowRight, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -141,7 +141,6 @@ export function PathwayCards() {
               "Skills in Demand (SID) visa pathways",
               "State sponsorship opportunities",
               "Priority occupation fast-tracking",
-              "EOI invitation predictions",
             ]}
             icon={Plane}
             ctaText="Explore Pathways"
@@ -150,22 +149,13 @@ export function PathwayCards() {
           />
         </div>
 
-        {/* Quick Stats */}
-        <motion.div 
-          className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-        >
-          <div className="flex items-center gap-2.5 bg-card/80 px-4 py-2.5 rounded-full border border-border/50 shadow-soft-xs">
-            <Timer className="h-4 w-4 text-gold" />
-            <span>7-day median processing for SID priority</span>
-          </div>
-          <div className="flex items-center gap-2.5 bg-card/80 px-4 py-2.5 rounded-full border border-border/50 shadow-soft-xs">
-            <Target className="h-4 w-4 text-gold" />
-            <span>85+ points typical invitation threshold</span>
-          </div>
-        </motion.div>
+        {/* Two stat pills stood here: "7-day median processing for SID
+            priority" and "85+ points typical invitation threshold". Neither
+            was sourced. Processing times are published per-subclass and move
+            constantly, and an invitation threshold varies by occupation and
+            round — quoting one figure as typical is a prediction we have no
+            round data to make. If these come back they belong in admin config
+            with a date, next to the real /stats count in the hero. */}
       </div>
     </section>
   );
