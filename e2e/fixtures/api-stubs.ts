@@ -321,8 +321,6 @@ export interface Recorder {
   pointsPayload: () => Record<string, unknown> | null;
   partnerPayload: () => Record<string, unknown> | null;
   questionnairePayload: () => Record<string, unknown> | null;
-  /** POST /leads — enquiry capture, including the honeypot field. */
-  leadPayload: () => Record<string, unknown> | null;
   /**
    * The `q` sent to GET /search/intent.
    *
@@ -425,7 +423,6 @@ export async function stubApi(
   let pointsPayload: Record<string, unknown> | null = null;
   let partnerPayload: Record<string, unknown> | null = null;
   let questionnairePayload: Record<string, unknown> | null = null;
-  let leadPayload: Record<string, unknown> | null = null;
   let intentQuery: string | null = null;
   let calendlyUrl: string | null = null;
   let statusCalls = 0;
@@ -651,20 +648,6 @@ export async function stubApi(
     }),
   );
 
-  // --- Leads ---
-  //
-  // Enquiry capture. Recorded rather than merely swallowed because the
-  // honeypot lives in this payload: a real visitor must never send `website`,
-  // and the only way to notice that the field stopped being hidden is to look
-  // at what got sent.
-  await page.route(
-    '**/api/v1/leads**',
-    handler('/leads', (route) => {
-      leadPayload = route.request().postDataJSON();
-      return json(route, envelope({ id: 'lead-1' }));
-    }),
-  );
-
   // --- Audits ---
   await page.route(
     '**/api/v1/partner/**',
@@ -862,7 +845,6 @@ export async function stubApi(
     pointsPayload: () => pointsPayload,
     partnerPayload: () => partnerPayload,
     questionnairePayload: () => questionnairePayload,
-    leadPayload: () => leadPayload,
     intentQuery: () => intentQuery,
     calendlyUrl: () => calendlyUrl,
     statusCallCount: () => statusCalls,

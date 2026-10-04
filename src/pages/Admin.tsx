@@ -1,3 +1,4 @@
+import { VisaManagement } from "@/components/admin/VisaManagement";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Header } from "@/components/common/navbar/Header";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
@@ -11,7 +12,6 @@ import {
   PointsConfigManager,
   PolicyConfigManager,
   OccupationListImport,
-  LeadsManager,
   ProspectsManager,
 } from "@/components/admin";
 import { AdminGate } from "@/components/admin/AdminGate";
@@ -28,6 +28,7 @@ export default function Admin() {
             <main className="flex-1 bg-muted/30 p-4 sm:p-6 lg:p-8">
               <Routes>
                 <Route index element={<AdminOverview />} />
+                <Route path="visas" element={<VisaManagement />} />
                 <Route path="site-config" element={<SiteConfigEditor />} />
                 <Route path="form-logic" element={<FormLogicEditor />} />
                 <Route path="points-config" element={<PointsConfigManager />} />
@@ -64,7 +65,6 @@ export default function Admin() {
                     through more usefully: per user, under User Oversight ->
                     Consultation Intake. Old bookmarks fall through to the
                     catch-all below and land on the overview. */}
-                <Route path="leads" element={<LeadsManager />} />
                 <Route path="prospects" element={<ProspectsManager />} />
 
                 <Route path="settings" element={<AdminSettings />} />

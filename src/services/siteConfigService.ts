@@ -22,7 +22,11 @@ export interface FooterConfig {
   resourceLinks: string[];
 }
 
+export interface VisaDetail { subclass: string; title: string; description: string; }
+export interface VisaCategory { description?: string; buttonLabel?: string; slug: string; title: string; visas: VisaDetail[]; }
+
 export interface SiteConfigData {
+  visaCategories?: VisaCategory[];
   home: HomePageConfig;
   skilled: PageConfig;
   partner: PageConfig;
@@ -46,7 +50,9 @@ class SiteConfigService {
   /** Update the full site configuration. */
   async updateConfig(data: SiteConfigData): Promise<SiteConfigData> {
     const res = await apiClient.put<any>("/admin/site-config", data);
-    return unwrap<SiteConfigData>(res);
+    const saved = unwrap<SiteConfigData>(res);
+    window.dispatchEvent(new CustomEvent("site-config-updated", { detail: saved }));
+    return saved;
   }
 
   /** Fetch the public site configuration (no auth required). */

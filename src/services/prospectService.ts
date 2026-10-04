@@ -30,6 +30,7 @@ export interface CaptureProspectPayload {
   consent_text?: string;
   /** Whatever the calculator produced — stored for the agent. */
   answers?: Record<string, unknown>;
+  attribution?: Record<string, unknown>;
 }
 
 export interface CaptureProspectResult {

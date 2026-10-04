@@ -16,6 +16,12 @@ export function SiteConfigProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const update = (event: Event) => setConfig((event as CustomEvent<SiteConfigData>).detail);
+    window.addEventListener("site-config-updated", update);
+    return () => window.removeEventListener("site-config-updated", update);
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     siteConfigService
       .getPublicConfig()

@@ -1,13 +1,13 @@
-import { Header } from "@/components/common/navbar/Header";
-import { Footer } from "@/components/common/footer/Footer";
-import { PartnerEligibilityForm } from "@/components/partner/eligibility/PartnerEligibilityForm";
+import { ApplicantAudit } from '@/components/partner/eligibility/ApplicantAudit';
+import { Header } from '@/components/common/navbar/Header';
+import { Footer } from '@/components/common/footer/Footer';
 
 export default function PartnerAudit() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-cloud">
       <Header />
       <main className="flex-1">
-        <PartnerEligibilityForm />
+        <ApplicantAudit />
       </main>
       <Footer />
     </div>

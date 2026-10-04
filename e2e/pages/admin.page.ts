@@ -31,7 +31,7 @@ export interface AdminScreen {
  */
 export const ADMIN_SCREENS: AdminScreen[] = [
   { path: '/admin', name: 'overview', marker: /overview|dashboard/i },
-  { path: '/admin/leads', name: 'leads', marker: /leads/i },
+  { path: '/admin/prospects', name: 'prospects', marker: /prospects/i },
   { path: '/admin/site-config', name: 'site config', marker: /site config|configuration/i },
   { path: '/admin/form-logic', name: 'form logic', marker: /form logic/i },
   // Path kept for bookmarks; the screen is invitation thresholds now that the

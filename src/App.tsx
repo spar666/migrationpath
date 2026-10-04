@@ -2,9 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import VisaDetails from "@/pages/VisaDetails";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SiteConfigProvider } from "@/contexts/SiteConfigContext";
+import { SiteSeo } from "@/components/seo/SiteSeo";
 import Index from "./pages/Index";
 import PointsCalculator from "./pages/PointsCalculator";
 import OccupationSearch from "./pages/OccupationSearch";
@@ -20,6 +22,7 @@ import ConsultSchedule from "./pages/ConsultSchedule";
 import ConsultBook from "./pages/ConsultBook";
 import ConsultConfirmed from "./pages/ConsultConfirmed";
 import PartnerAudit from "./pages/PartnerAudit";
+import StandardCapture from "./pages/StandardCapture";
 import { 
   SkilledPathway, 
   PartnerPathway, 
@@ -49,8 +52,11 @@ const App = () => (
         <Sonner />
         <SiteConfigProvider>
         <BrowserRouter>
+          <SiteSeo />
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/visas/:categorySlug" element={<VisaDetails />} />
+            <Route path="/visas/:categorySlug/:subclass" element={<VisaDetails />} />
             <Route path="/points-calculator" element={<PointsCalculator />} />
             <Route path="/occupation-search" element={<OccupationSearch />} />
             <Route path="/consultation" element={<Consultation />} />
@@ -74,6 +80,8 @@ const App = () => (
             <Route path="/consult/book" element={<ConsultBook />} />
             <Route path="/consult/confirmed" element={<ConsultConfirmed />} />
             <Route path="/partner-audit" element={<PartnerAudit />} />
+            <Route path="/pathways/485" element={<StandardCapture pathway="485" title="Temporary Graduate pathway enquiry" description="Tell us about your studies, current visa and plans. A registered migration agent will review which Temporary Graduate options may be relevant." />} />
+            <Route path="/pathways/858" element={<StandardCapture pathway="858" title="National Innovation pathway enquiry" description="Tell us about your internationally recognised achievements and proposed contribution. A registered migration agent must assess this pathway." />} />
             <Route path="/news" element={<News />} />
             <Route path="/news/:slug" element={<NewsArticle />} />
             {/* Sign-in is staff-only and lives inside the admin namespace.

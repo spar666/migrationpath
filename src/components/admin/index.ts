@@ -10,7 +10,6 @@ export { AdminSettings } from "./AdminSettings";
 
 export { PointsConfigManager } from "./PointsConfigManager";
 export { ConsultationIntakeTab } from "./ConsultationIntakeTab";
-export { LeadsManager } from "./LeadsManager";
 export { ProspectsManager } from "./ProspectsManager";
 export { AdminStrategyPanel } from "./AdminStrategyPanel";
 

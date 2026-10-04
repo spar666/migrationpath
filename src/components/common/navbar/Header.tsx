@@ -1,3 +1,4 @@
+import { VisaNavigation } from "./VisaNavigation";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Search, Calculator, ChevronDown, Briefcase, Heart, Building2, Home, Newspaper, Sparkles } from "lucide-react";
@@ -158,8 +159,9 @@ export function Header() {
 					{!isAdminPage && (
 						<motion.nav
 							variants={containerVariants}
-							className="hidden items-center gap-1 md:flex"
+							className="hidden items-center gap-1 xl:flex"
 						>
+							<VisaNavigation />
 							{/* Pathways Dropdown */}
 							<motion.div variants={itemVariants}>
 								<DropdownMenu>
@@ -228,7 +230,7 @@ export function Header() {
 					)}
 
 					{/* Desktop Right Actions */}
-					<motion.div variants={itemVariants} className="hidden items-center gap-3 md:flex">
+					<motion.div variants={itemVariants} className="hidden items-center gap-3 xl:flex">
 						{/* A second search control stood here: an icon button with
 						    no onClick and no handler behind it. Two entry points
 						    for one search was already a coin toss for the visitor;
@@ -259,7 +261,7 @@ export function Header() {
 					</motion.div>
 
 					{/* Mobile Menu Trigger */}
-					<motion.div variants={itemVariants} className="md:hidden">
+					<motion.div variants={itemVariants} className="xl:hidden">
 						<Sheet open={isOpen} onOpenChange={setIsOpen}>
 							<SheetTrigger asChild>
 								<Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg text-white/70 hover:text-white hover:bg-white/10">
@@ -278,7 +280,8 @@ export function Header() {
 										</SheetClose>
 									</div>
 
-									<nav className="flex flex-col gap-1 p-4">
+									<nav className="flex flex-col gap-1 p-4 overflow-y-auto">
+                                        {!isAdminPage && <VisaNavigation mobile onNavigate={() => setIsOpen(false)} />}
 										{/* Mirrors the desktop bar. Get Started is no
 										    longer in navLinks, so without this it would
 										    vanish from the menu on the widths where it

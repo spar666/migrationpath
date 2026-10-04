@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Search, Calculator, FileText } from "lucide-react";
+import { Home, Search, Calculator, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -10,7 +10,7 @@ const navItems = [
 	{ href: "/", icon: Home, label: "Home" },
 	{ href: "/occupation-search", icon: Search, label: "Search" },
 	{ href: "/points-calculator", icon: Calculator, label: "Points" },
-	{ href: "/consultation", icon: FileText, label: "Consult" },
+	{ href: "/get-started", icon: Sparkles, label: "Start" },
 ];
 
 export function MobileBottomNav() {

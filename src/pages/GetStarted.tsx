@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Briefcase, Calculator, Heart, ShieldCheck } from "lucide-react";
+import { ArrowRight, Award, Briefcase, Calculator, GraduationCap, Heart, ShieldCheck } from "lucide-react";
 import { Header } from "@/components/common/navbar/Header";
 import { Footer } from "@/components/common/footer/Footer";
 import { MobileBottomNav } from "@/components/common/navbar/MobileBottomNav";
@@ -19,10 +19,8 @@ import { MobileBottomNav } from "@/components/common/navbar/MobileBottomNav";
  * below already asks its own questions properly, and a field asked twice is a
  * field answered once.
  *
- * Two situations are deliberately missing. The recent-graduate (485) lead form
- * and the internationally-recognised-expert (858) funnel do not exist yet, so
- * offering them here would route people to a 404. Add each option in this list
- * as its funnel comes online — nothing else needs to change.
+ * Results are intentionally allowed to overlap: a graduate with skilled work
+ * experience may reasonably check both the 485 and skilled pathways.
  */
 
 const OPTIONS = [
@@ -32,6 +30,20 @@ const OPTIONS = [
     title: "I'm a skilled worker applying on points",
     body: "Skilled Independent, State Nominated or Regional. Start by scoring your points profile — it decides which subclasses are even open to you.",
     action: "Score my points",
+  },
+  {
+    to: "/pathways/485",
+    icon: GraduationCap,
+    title: "I've recently completed eligible study in Australia",
+    body: "Send a Temporary Graduate pathway enquiry for an RMA to review. This is a contact form, not an automated eligibility decision.",
+    action: "Ask about subclass 485",
+  },
+  {
+    to: "/pathways/858",
+    icon: Award,
+    title: "I have internationally recognised achievements",
+    body: "Tell us about your record in your field so an RMA can review whether the National Innovation pathway may be relevant.",
+    action: "Ask about subclass 858",
   },
   {
     to: "/partner-audit",
@@ -80,7 +92,7 @@ export default function GetStarted() {
 
         <section className="py-12 md:py-16">
           <div className="container px-4 md:px-6">
-            <div className="grid gap-5 md:gap-6 lg:grid-cols-3 max-w-6xl">
+            <div className="grid gap-5 md:grid-cols-2 md:gap-6 lg:grid-cols-3 max-w-6xl">
               {OPTIONS.map((option, index) => (
                 <motion.div
                   key={option.to}

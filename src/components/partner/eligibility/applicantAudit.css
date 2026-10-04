@@ -1,0 +1,80 @@
+.applicant-audit {
+  background: hsl(var(--cloud));
+  color: hsl(var(--navy));
+  padding: 48px 24px 64px;
+}
+.audit-choice { max-width: 1000px; margin: auto; text-align: center; }
+.audit-choice h1 { font-size: clamp(30px, 4vw, 48px); font-weight: 700; line-height: 1.2; letter-spacing: -.02em; }
+.audit-choice > p { max-width: 800px; margin: 24px auto; color: hsl(var(--navy-muted)); font-size: 17px; line-height: 1.7; }
+.audit-choice .audit-prompt { margin: 32px auto 24px; font-size: 14px; font-weight: 600; }
+.audit-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.audit-cards > button {
+  background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 16px;
+  min-height: 230px; padding: 32px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 20px; box-shadow: var(--shadow-glass); transition: transform .2s, border-color .2s, box-shadow .2s;
+}
+.audit-cards > button:hover { border-color: hsl(var(--gold)); transform: translateY(-3px); box-shadow: var(--shadow-glass-hover); }
+.audit-cards h2 { font-size: 24px; font-weight: 700; }
+.audit-illustration { display: flex; width: 64px; height: 64px; align-items: center; justify-content: center; border-radius: 16px; color: hsl(var(--gold-dark)); background: hsl(var(--gold) / .15); }
+.audit-illustration svg { width: 32px; height: 32px; stroke-width: 1.75; }
+.audit-content { max-width: 720px; margin: 0 auto; }
+.audit-intro, form.audit-content { border: 1px solid hsl(var(--border)); background: hsl(var(--card)); padding: 36px; border-radius: 16px; box-shadow: var(--shadow-glass); }
+.audit-content h1 { font-size: clamp(26px, 3vw, 36px); line-height: 1.25; font-weight: 700; letter-spacing: -.02em; margin-bottom: 32px; }
+.audit-intro h1 { margin: 24px 0 12px; }
+.audit-intro h3 { font-size: 14px; font-weight: 600; color: hsl(var(--navy-muted)); }
+.audit-intro-copy { border-block: 1px solid hsl(var(--border)); padding: 24px 0; margin: 28px 0; font-size: 16px; line-height: 1.7; }
+.audit-intro-copy p + p { margin-top: 16px; }
+.audit-muted { color: hsl(var(--navy-muted)); }
+.audit-intro aside { display: flex; align-items: flex-start; gap: 12px; background: hsl(var(--cloud)); border: 1px solid hsl(var(--border)); padding: 16px; border-radius: 12px; font-size: 14px; color: hsl(var(--navy-muted)); margin-bottom: 28px; line-height: 1.6; }
+.audit-intro aside svg { color: hsl(var(--gold-dark)); flex-shrink: 0; margin-top: 2px; }
+.audit-intro aside button { color: hsl(var(--navy)); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.audit-step { max-width: 720px; margin: 0 auto 20px; }
+.audit-step-label { display: flex; justify-content: space-between; gap: 16px; color: hsl(var(--navy-muted)); font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+.audit-fields { display: flex; flex-direction: column; gap: 28px; }
+.audit-field > label:first-child { display: block; font-size: 16px; font-weight: 600; line-height: 1.5; margin-bottom: 8px; }
+.audit-field > p { white-space: pre-line; font-size: 14px; line-height: 1.65; color: hsl(var(--navy-muted)); margin: 0 0 14px; }
+.audit-required { color: hsl(var(--gold-dark)); }
+.audit-field > input:not([type=range]), .audit-field > select {
+  width: 100%; height: 48px; background: hsl(var(--card)); color: hsl(var(--navy));
+  border: 1px solid hsl(var(--input)); border-radius: 8px; padding: 10px 14px; font-size: 16px;
+}
+.applicant-audit input:focus-visible, .applicant-audit select:focus-visible, .audit-cards button:focus-visible, .audit-content button:focus-visible { outline: 2px solid hsl(var(--gold)); outline-offset: 3px; }
+.audit-options { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.audit-options label { display: flex; align-items: center; gap: 12px; background: hsl(var(--card)); border: 1px solid hsl(var(--input)); border-radius: 12px; padding: 13px 16px; min-width: 110px; font-size: 15px; color: hsl(var(--navy)); cursor: pointer; transition: background .15s, border-color .15s; }
+.audit-options label:hover { border-color: hsl(var(--gold) / .6); }
+.audit-options label.selected { border-color: hsl(var(--gold)); background: hsl(var(--gold) / .08); box-shadow: 0 0 0 1px hsl(var(--gold)); }
+.audit-options input { height: 18px; width: 18px; accent-color: hsl(var(--gold-dark)); flex-shrink: 0; }
+.audit-options-many { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.audit-field:has([name=referral]) .audit-options-many, .audit-field:has([name=technology]) .audit-options { display: grid; grid-template-columns: 1fr; }
+.audit-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 32px; }
+.audit-next { gap: 8px; }
+.audit-next svg { width: 18px; height: 18px; }
+.audit-back { font-size: 14px; color: hsl(var(--navy-muted)); }
+.audit-intro > .audit-back { margin-left: 16px; }
+.audit-range-label { display: flex; justify-content: space-between; font-size: 14px; color: hsl(var(--navy-muted)); }
+.audit-field input[type=range] { width: 100%; accent-color: hsl(var(--gold)); }
+.audit-upload { position: relative; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; border: 2px dashed hsl(var(--input)); border-radius: 12px; padding: 26px; font-size: 16px; color: hsl(var(--navy-muted)); cursor: pointer; margin: 16px 0; background: hsl(var(--cloud)); overflow-wrap: anywhere; }
+.audit-upload:focus-within { outline: 2px solid hsl(var(--gold)); outline-offset: 3px; }
+.audit-upload input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.audit-consent { display: flex; align-items: flex-start; gap: 12px; margin-top: 24px; font-size: 13px; color: hsl(var(--navy-muted)); line-height: 1.6; }
+.audit-consent input { margin-top: 4px; accent-color: hsl(var(--gold-dark)); }
+.audit-file-note { font-size: 12px !important; }
+.audit-validation { position: absolute; width: 1px !important; height: 1px !important; opacity: 0; }
+.audit-unknown { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 14px; }
+.audit-unknown input { accent-color: hsl(var(--gold-dark)); }
+@media (max-width: 640px) {
+  .applicant-audit { padding: 32px 16px 40px; }
+  .audit-cards { grid-template-columns: 1fr; gap: 16px; }
+  .audit-cards > button { min-height: 180px; padding: 24px; }
+  .audit-cards h2 { font-size: 21px; }
+  .audit-intro, form.audit-content { padding: 24px 20px; }
+  .audit-options-many { grid-template-columns: 1fr; }
+  .audit-step-label { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .audit-cards > button { transition: none; }
+  .audit-cards > button:hover { transform: none; }
+}
+.audit-field:has([name=referral_source]) .audit-options-many {
+  grid-template-columns: 1fr;
+}

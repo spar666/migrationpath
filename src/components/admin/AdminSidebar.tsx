@@ -13,7 +13,6 @@ import {
   Calculator,
   ListChecks,
   Scale,
-  Inbox,
   ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,8 +22,8 @@ import { dataFreshnessService } from "@/services/dataFreshnessService";
 
 const menuItems = [
   { title: "Overview", icon: LayoutDashboard, path: "/admin" },
-  { title: "Leads", icon: Inbox, path: "/admin/leads" },
   { title: "Prospects", icon: ClipboardCheck, path: "/admin/prospects" },
+  { title: "Visa Management", icon: Briefcase, path: "/admin/visas" },
   { title: "Site Configuration", icon: Settings, path: "/admin/site-config" },
   { title: "Form Logic", icon: ListChecks, path: "/admin/form-logic" },
   { title: "Points Configuration", icon: Calculator, path: "/admin/points-config" },

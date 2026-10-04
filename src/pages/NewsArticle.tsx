@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { NewsSidebar } from "@/components/news";
 import { newsService } from "@/services/newsService";
 import type { NewsArticle } from "@/types";
+import { PageSeo } from "@/components/seo/SiteSeo";
 
 const categoryColors: Record<string, string> = {
   "Policy Update": "bg-accent/20 text-accent border-accent/30",
@@ -96,6 +97,14 @@ const NewsArticlePage = () => {
   }
 
   return (
+    <>
+    <PageSeo
+      title={article.title}
+      description={article.excerpt || `Read ${article.title} from MigrationPath.`}
+      type="article"
+      datePublished={article.publishedAt || article.date}
+      dateModified={article.updatedAt}
+    />
     <div className="flex min-h-screen flex-col pb-20 md:pb-0">
       <Header />
 
@@ -251,6 +260,7 @@ const NewsArticlePage = () => {
       <Footer />
       <MobileBottomNav />
     </div>
+    </>
   );
 };
 

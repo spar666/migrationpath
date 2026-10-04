@@ -518,14 +518,13 @@ describe('GetStarted splitter', () => {
     expect(hrefs).toContain('/pre-screen');
   });
 
-  it('offers no funnel that does not exist yet', () => {
-    // The 485 graduate form and the 858 expert funnel are named in the plan
-    // but unbuilt. An option for either would route to the 404 page.
+  it('offers the simple-capture pathways without restoring quote', () => {
     const { container } = renderAt(<GetStarted />, '/get-started');
     const hrefs = Array.from(container.querySelectorAll('a'))
       .map((a) => a.getAttribute('href'));
 
     expect(hrefs).not.toContain('/quote');
-    expect(hrefs.some((h) => h?.includes('485') || h?.includes('858'))).toBe(false);
+    expect(hrefs).toContain('/pathways/485');
+    expect(hrefs).toContain('/pathways/858');
   });
 });

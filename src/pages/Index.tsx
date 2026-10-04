@@ -9,6 +9,8 @@ import { SuccessStories } from "@/components/home/SuccessStories";
 import { FinalCTA } from "@/components/home/FinalCTA";
 import { MobileSearchOverlay } from "@/components/search/MobileSearchOverlay";
 
+import { VisaCategories } from "@/components/home/VisaCategories";
+
 const Index = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const navigate = useNavigate();
@@ -18,6 +20,7 @@ const Index = () => {
       <Header />
       <main className="flex-1">
         <HeroSection onSearchFocus={() => setIsSearchOpen(true)} />
+        <VisaCategories />
         <PathwayCards />
         <SuccessStories />
         <FinalCTA />

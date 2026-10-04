@@ -22,6 +22,7 @@ interface PageConfig {
 }
 
 interface SiteConfig {
+  visaCategories?: SiteConfigData["visaCategories"];
   home: PageConfig & {
     outlookTitle: string;
     outlookDescription: string;

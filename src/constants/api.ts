@@ -31,9 +31,6 @@ export const API_ENDPOINTS = {
   GET_NEWS_ARTICLE_BY_SLUG: '/cms/news-articles/slug/:slug',
   GET_SUCCESS_STORIES: '/cms/success-stories',
 
-  // Leads
-  CREATE_LEAD: '/leads',
-
   // Stats
   STATS: '/stats',
 
